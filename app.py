@@ -48,7 +48,8 @@ def init_db():
     # Migrate: add ticket_id column if missing (existing databases)
     cols = [r[1] for r in db.execute("PRAGMA table_info(complaints)").fetchall()]
     if "ticket_id" not in cols:
-        db.execute("ALTER TABLE complaints ADD COLUMN ticket_id TEXT UNIQUE")
+        db.execute("ALTER TABLE complaints ADD COLUMN ticket_id TEXT")
+        db.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_ticket_id ON complaints(ticket_id)")
     if "customer_email" not in cols:
         db.execute("ALTER TABLE complaints ADD COLUMN customer_email TEXT")
     # Back-fill ticket IDs for any existing complaints without one
