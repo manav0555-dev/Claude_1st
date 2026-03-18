@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}HVAC Support{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/client.css') }}">
+</head>
+<body class="client-body">
+    <header class="client-header">
+        <div class="client-header-inner">
+            <a href="{{ url_for('client_home') }}" class="client-logo">&#9881; HVAC Support</a>
+            <nav class="client-nav">
+                <a href="{{ url_for('client_submit') }}">Lodge Complaint</a>
+                <a href="{{ url_for('client_track') }}">Track Status</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="client-main">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="client-footer">
+        <p>HVAC Complaint Tracking System &middot; Need help? Call us at (555) 000-0000</p>
+    </footer>
+</body>
+</html>

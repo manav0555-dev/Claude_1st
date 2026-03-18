@@ -1,0 +1,24 @@
+{% extends "client_base.html" %}
+{% block title %}Complaint Submitted - HVAC Support{% endblock %}
+
+{% block content %}
+<div class="client-success-page">
+    <div class="client-success-card">
+        <div class="client-success-icon">&#10003;</div>
+        <h1>Complaint Submitted Successfully!</h1>
+        <p>Your complaint has been received and is now in our queue. A technician will be assigned shortly.</p>
+
+        <div class="ticket-display">
+            <span class="ticket-label">Your Ticket Number</span>
+            <span class="ticket-number">{{ ticket_id }}</span>
+        </div>
+
+        <p class="ticket-hint">Save this ticket number! You can use it to track the status of your complaint at any time.</p>
+
+        <div class="client-success-actions">
+            <a href="{{ url_for('client_track', ticket_id=ticket_id) }}" class="btn btn-primary">Track My Complaint</a>
+            <a href="{{ url_for('client_home') }}" class="btn btn-secondary">Back to Home</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

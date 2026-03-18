@@ -1,0 +1,77 @@
+{% extends "client_base.html" %}
+{% block title %}Track Complaint - HVAC Support{% endblock %}
+
+{% block content %}
+<div class="client-form-page">
+    <h1>Track Your Complaint</h1>
+    <p class="client-form-subtitle">Enter your ticket number to check the current status of your complaint.</p>
+
+    <div class="card">
+        <form method="POST">
+            <div class="track-search-row">
+                <input type="text" name="ticket_id" class="form-control" placeholder="Enter ticket number (e.g. HVAC-A3X7K2)" required
+                    value="{{ request.form.get('ticket_id', request.args.get('ticket_id', '')) }}">
+                <button type="submit" class="btn btn-primary">Search</button>
+            </div>
+        </form>
+    </div>
+
+    {% if searched and complaint %}
+    <div class="card track-result">
+        <h2>Ticket: {{ complaint['ticket_id'] }}</h2>
+
+        <div class="track-status-banner track-status-{{ complaint['status'] }}">
+            {% if complaint['status'] == 'open' %}
+                Waiting in Queue
+            {% elif complaint['status'] == 'in_progress' %}
+                Technician Assigned - In Progress
+            {% elif complaint['status'] == 'resolved' %}
+                Resolved
+            {% elif complaint['status'] == 'closed' %}
+                Closed
+            {% endif %}
+        </div>
+
+        <div class="track-details">
+            <div class="track-detail-row">
+                <span class="track-label">Category</span>
+                <span class="track-value">{{ complaint['category'] or 'General' }}</span>
+            </div>
+            <div class="track-detail-row">
+                <span class="track-label">Location</span>
+                <span class="track-value">{{ complaint['site_name'] or 'Not specified' }}</span>
+            </div>
+            <div class="track-detail-row">
+                <span class="track-label">Description</span>
+                <span class="track-value">{{ complaint['description'] }}</span>
+            </div>
+            {% if complaint['technician_name'] %}
+            <div class="track-detail-row">
+                <span class="track-label">Assigned Technician</span>
+                <span class="track-value">{{ complaint['technician_name'] }}</span>
+            </div>
+            {% endif %}
+            <div class="track-detail-row">
+                <span class="track-label">Submitted</span>
+                <span class="track-value">{{ complaint['created_at'] }}</span>
+            </div>
+            <div class="track-detail-row">
+                <span class="track-label">Last Updated</span>
+                <span class="track-value">{{ complaint['updated_at'] }}</span>
+            </div>
+            {% if complaint['resolved_at'] %}
+            <div class="track-detail-row">
+                <span class="track-label">Resolved At</span>
+                <span class="track-value">{{ complaint['resolved_at'] }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% elif searched %}
+    <div class="card track-not-found">
+        <h3>Ticket Not Found</h3>
+        <p>We couldn't find a complaint with that ticket number. Please double-check and try again.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

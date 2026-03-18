@@ -136,14 +136,14 @@
         <table>
             <thead>
                 <tr>
-                    <th>ID</th><th>Priority</th><th>Title</th><th>Customer</th>
+                    <th>Ticket</th><th>Priority</th><th>Title</th><th>Customer</th>
                     <th>Technician</th><th>Site</th><th>Status</th><th>Created</th>
                 </tr>
             </thead>
             <tbody>
                 {% for c in recent %}
                 <tr>
-                    <td><a href="{{ url_for('view_complaint', complaint_id=c['id']) }}">#{{ c['id'] }}</a></td>
+                    <td><a href="{{ url_for('view_complaint', complaint_id=c['id']) }}">{{ c['ticket_id'] or '#' ~ c['id'] }}</a></td>
                     <td><span class="priority-badge priority-{{ c['priority'] }}">{{ c['priority'] }}</span></td>
                     <td><a href="{{ url_for('view_complaint', complaint_id=c['id']) }}">{{ c['title'] }}</a></td>
                     <td>{{ c['customer_name'] }}</td>

@@ -1,0 +1,297 @@
+/* ── Client-facing styles ─────────────────────────────────────────────── */
+
+.client-body {
+    background: var(--gray-100);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────── */
+.client-header {
+    background: var(--white);
+    box-shadow: var(--shadow);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.client-header-inner {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.client-logo {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--dark);
+}
+
+.client-logo:hover { text-decoration: none; color: var(--primary); }
+
+.client-nav { display: flex; gap: 24px; }
+
+.client-nav a {
+    font-size: .9rem;
+    font-weight: 500;
+    color: var(--gray-700);
+    transition: color .15s;
+}
+
+.client-nav a:hover { color: var(--primary); text-decoration: none; }
+
+/* ── Main content ────────────────────────────────────────────────────── */
+.client-main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 32px 24px;
+    width: 100%;
+    flex: 1;
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────── */
+.client-footer {
+    text-align: center;
+    padding: 20px 24px;
+    font-size: .85rem;
+    color: var(--gray-700);
+    border-top: 1px solid var(--gray-200);
+    margin-top: auto;
+}
+
+/* ── Hero section ────────────────────────────────────────────────────── */
+.client-hero {
+    text-align: center;
+    padding: 60px 20px;
+    background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
+    border-radius: var(--radius);
+    color: var(--white);
+    margin-bottom: 40px;
+}
+
+.client-hero h1 {
+    font-size: 2.2rem;
+    margin-bottom: 12px;
+}
+
+.client-hero p {
+    font-size: 1.1rem;
+    opacity: .9;
+    max-width: 500px;
+    margin: 0 auto 28px;
+}
+
+.client-hero-actions {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.btn-lg {
+    padding: 14px 32px;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.client-hero .btn-secondary {
+    background: rgba(255,255,255,.2);
+    color: var(--white);
+    border: 1px solid rgba(255,255,255,.4);
+}
+
+.client-hero .btn-secondary:hover {
+    background: rgba(255,255,255,.3);
+}
+
+/* ── Info cards ──────────────────────────────────────────────────────── */
+.client-info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-bottom: 40px;
+}
+
+.client-info-card {
+    background: var(--white);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 28px 24px;
+    text-align: center;
+}
+
+.client-info-icon {
+    font-size: 2rem;
+    margin-bottom: 12px;
+}
+
+.client-info-card h3 {
+    font-size: 1.05rem;
+    margin-bottom: 8px;
+}
+
+.client-info-card p {
+    font-size: .9rem;
+    color: var(--gray-700);
+    line-height: 1.5;
+}
+
+/* ── Form page ───────────────────────────────────────────────────────── */
+.client-form-page h1 {
+    font-size: 1.6rem;
+    margin-bottom: 4px;
+}
+
+.client-form-subtitle {
+    color: var(--gray-700);
+    margin-bottom: 24px;
+    font-size: .95rem;
+}
+
+/* ── Success page ────────────────────────────────────────────────────── */
+.client-success-page {
+    display: flex;
+    justify-content: center;
+    padding-top: 40px;
+}
+
+.client-success-card {
+    text-align: center;
+    max-width: 520px;
+}
+
+.client-success-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: var(--success);
+    color: var(--white);
+    font-size: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+}
+
+.client-success-card h1 {
+    font-size: 1.5rem;
+    margin-bottom: 12px;
+}
+
+.client-success-card > p {
+    color: var(--gray-700);
+    margin-bottom: 24px;
+}
+
+.ticket-display {
+    background: var(--gray-100);
+    border: 2px dashed var(--primary);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 16px;
+}
+
+.ticket-label {
+    display: block;
+    font-size: .8rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--gray-700);
+    margin-bottom: 8px;
+}
+
+.ticket-number {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: .08em;
+}
+
+.ticket-hint {
+    font-size: .85rem;
+    color: var(--gray-700);
+    margin-bottom: 24px;
+}
+
+.client-success-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+/* ── Track page ──────────────────────────────────────────────────────── */
+.track-search-row {
+    display: flex;
+    gap: 12px;
+}
+
+.track-search-row .form-control { flex: 1; }
+
+.track-result h2 {
+    font-size: 1.2rem;
+    margin-bottom: 16px;
+}
+
+.track-status-banner {
+    padding: 14px 20px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 1rem;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.track-status-open { background: #fce8e6; color: var(--danger); }
+.track-status-in_progress { background: #fef7e0; color: #e37400; }
+.track-status-resolved { background: #e6f4ea; color: var(--success); }
+.track-status-closed { background: var(--gray-200); color: var(--gray-700); }
+
+.track-details { display: flex; flex-direction: column; gap: 12px; }
+
+.track-detail-row {
+    display: flex;
+    gap: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.track-label {
+    width: 160px;
+    flex-shrink: 0;
+    font-size: .85rem;
+    font-weight: 600;
+    color: var(--gray-700);
+}
+
+.track-value {
+    font-size: .95rem;
+    color: var(--dark);
+}
+
+.track-not-found {
+    text-align: center;
+    padding: 32px;
+}
+
+.track-not-found h3 {
+    margin-bottom: 8px;
+    color: var(--danger);
+}
+
+.track-not-found p {
+    color: var(--gray-700);
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .client-hero h1 { font-size: 1.6rem; }
+    .client-info-grid { grid-template-columns: 1fr; }
+    .track-search-row { flex-direction: column; }
+    .track-detail-row { flex-direction: column; gap: 4px; }
+    .track-label { width: auto; }
+}

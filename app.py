@@ -2,6 +2,8 @@ import os
 import sqlite3
 import hashlib
 import secrets
+import random
+import string
 from datetime import datetime
 from functools import wraps
 from flask import (
@@ -31,10 +33,32 @@ def close_db(exc):
         db.close()
 
 
+def generate_ticket_id():
+    """Generate a unique ticket ID like HVAC-A3X7K2."""
+    chars = string.ascii_uppercase + string.digits
+    suffix = ''.join(random.choices(chars, k=6))
+    return f"HVAC-{suffix}"
+
+
 def init_db():
     db = sqlite3.connect(DATABASE)
     db.execute("PRAGMA foreign_keys = ON")
     db.executescript(SCHEMA)
+
+    # Migrate: add ticket_id column if missing (existing databases)
+    cols = [r[1] for r in db.execute("PRAGMA table_info(complaints)").fetchall()]
+    if "ticket_id" not in cols:
+        db.execute("ALTER TABLE complaints ADD COLUMN ticket_id TEXT UNIQUE")
+    if "customer_email" not in cols:
+        db.execute("ALTER TABLE complaints ADD COLUMN customer_email TEXT")
+    # Back-fill ticket IDs for any existing complaints without one
+    rows = db.execute("SELECT id FROM complaints WHERE ticket_id IS NULL").fetchall()
+    for row in rows:
+        tid = generate_ticket_id()
+        db.execute("UPDATE complaints SET ticket_id = ? WHERE id = ?", (tid, row[0]))
+    if rows:
+        db.commit()
+
     # Seed default admin if no users exist
     row = db.execute("SELECT COUNT(*) FROM users").fetchone()
     if row[0] == 0:
@@ -66,10 +90,12 @@ CREATE TABLE IF NOT EXISTS job_sites (
 
 CREATE TABLE IF NOT EXISTS complaints (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ticket_id TEXT UNIQUE,
     title TEXT NOT NULL,
     description TEXT NOT NULL,
     customer_name TEXT NOT NULL,
     customer_phone TEXT,
+    customer_email TEXT,
     job_site_id INTEGER,
     technician_id INTEGER,
     priority INTEGER NOT NULL DEFAULT 3 CHECK(priority BETWEEN 1 AND 5),
@@ -325,12 +351,13 @@ def new_complaint():
         if not all([title, description, customer_name]):
             flash("Title, description, and customer name are required.", "danger")
         else:
+            ticket_id = generate_ticket_id()
             db.execute("""
                 INSERT INTO complaints
-                (title, description, customer_name, customer_phone, job_site_id,
+                (ticket_id, title, description, customer_name, customer_phone, job_site_id,
                  technician_id, priority, category, created_by)
-                VALUES (?,?,?,?,?,?,?,?,?)
-            """, (title, description, customer_name, customer_phone,
+                VALUES (?,?,?,?,?,?,?,?,?,?)
+            """, (ticket_id, title, description, customer_name, customer_phone,
                   job_site_id, technician_id, priority, category, session["user_id"]))
             db.commit()
             flash("Complaint created successfully.", "success")
@@ -498,6 +525,69 @@ def api_insights():
         "monthly_trend": [{"month": r["month"], "count": r["cnt"]} for r in monthly],
         "avg_resolution_hours": avg_resolution["avg_hours"] if avg_resolution["avg_hours"] else 0,
     })
+
+
+# ── Client-facing pages (no login required) ────────────────────────────────
+
+@app.route("/client")
+def client_home():
+    return render_template("client_home.html")
+
+
+@app.route("/client/submit", methods=["GET", "POST"])
+def client_submit():
+    db = get_db()
+    if request.method == "POST":
+        customer_name = request.form.get("customer_name", "").strip()
+        customer_phone = request.form.get("customer_phone", "").strip()
+        customer_email = request.form.get("customer_email", "").strip()
+        job_site_id = request.form.get("job_site_id") or None
+        category = request.form.get("category", "").strip() or None
+        description = request.form.get("description", "").strip()
+
+        if not all([customer_name, description]):
+            flash("Your name and a description of the issue are required.", "danger")
+        else:
+            ticket_id = generate_ticket_id()
+            title = category or "General Complaint"
+            db.execute("""
+                INSERT INTO complaints
+                (ticket_id, title, description, customer_name, customer_phone,
+                 customer_email, job_site_id, category, priority, status)
+                VALUES (?,?,?,?,?,?,?,?,3,'open')
+            """, (ticket_id, title, description, customer_name, customer_phone,
+                  customer_email, job_site_id, category))
+            db.commit()
+            return redirect(url_for("client_success", ticket_id=ticket_id))
+
+    job_sites = db.execute("SELECT id, name FROM job_sites ORDER BY name").fetchall()
+    return render_template("client_submit.html", job_sites=job_sites)
+
+
+@app.route("/client/success/<ticket_id>")
+def client_success(ticket_id):
+    return render_template("client_success.html", ticket_id=ticket_id)
+
+
+@app.route("/client/track", methods=["GET", "POST"])
+def client_track():
+    complaint = None
+    searched = False
+    if request.method == "POST" or request.args.get("ticket_id"):
+        searched = True
+        ticket_id = (request.form.get("ticket_id") or request.args.get("ticket_id", "")).strip().upper()
+        if ticket_id:
+            db = get_db()
+            complaint = db.execute("""
+                SELECT c.ticket_id, c.status, c.category, c.description,
+                       c.created_at, c.updated_at, c.resolved_at,
+                       js.name as site_name, u.full_name as technician_name
+                FROM complaints c
+                LEFT JOIN job_sites js ON c.job_site_id = js.id
+                LEFT JOIN users u ON c.technician_id = u.id
+                WHERE c.ticket_id = ?
+            """, (ticket_id,)).fetchone()
+    return render_template("client_track.html", complaint=complaint, searched=searched)
 
 
 # ── Run ─────────────────────────────────────────────────────────────────────

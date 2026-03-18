@@ -1,0 +1,65 @@
+{% extends "client_base.html" %}
+{% block title %}Lodge a Complaint - HVAC Support{% endblock %}
+
+{% block content %}
+<div class="client-form-page">
+    <h1>Lodge a Complaint</h1>
+    <p class="client-form-subtitle">Please fill out the details below and we'll get back to you as soon as possible.</p>
+
+    <div class="card">
+        <form method="POST">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="customer_name">Your Full Name *</label>
+                    <input type="text" id="customer_name" name="customer_name" class="form-control" required placeholder="John Smith">
+                </div>
+                <div class="form-group">
+                    <label for="customer_email">Email Address</label>
+                    <input type="email" id="customer_email" name="customer_email" class="form-control" placeholder="john@example.com">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="customer_phone">Phone Number</label>
+                    <input type="tel" id="customer_phone" name="customer_phone" class="form-control" placeholder="(555) 123-4567">
+                </div>
+                <div class="form-group">
+                    <label for="job_site_id">Location / Job Site *</label>
+                    <select id="job_site_id" name="job_site_id" class="form-control" required>
+                        <option value="">Select your location...</option>
+                        {% for s in job_sites %}
+                        <option value="{{ s['id'] }}">{{ s['name'] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="category">Issue Category *</label>
+                <select id="category" name="category" class="form-control" required>
+                    <option value="">What type of issue?</option>
+                    <option value="Temperature">Temperature Issue (too hot/cold)</option>
+                    <option value="Airflow">Airflow Problem</option>
+                    <option value="Noise/Vibration">Noise or Vibration</option>
+                    <option value="Leak">Leak / Water Issue</option>
+                    <option value="Electrical">Electrical Issue</option>
+                    <option value="Installation">Installation Problem</option>
+                    <option value="Repair">Repair Needed</option>
+                    <option value="Maintenance">Maintenance Request</option>
+                    <option value="Billing">Billing Issue</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="description">Describe Your Issue *</label>
+                <textarea id="description" name="description" class="form-control" required
+                    placeholder="Please describe the problem in detail. Include information like when it started, which rooms are affected, and any other relevant details..."></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg" style="width:100%; justify-content:center;">Submit Complaint</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

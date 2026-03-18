@@ -2,11 +2,17 @@
 import sqlite3
 import hashlib
 import os
+import random
+import string
 
 DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "hvac_tickets.db")
 
 def hash_pw(pw):
     return hashlib.sha256(pw.encode()).hexdigest()
+
+def gen_ticket_id():
+    chars = string.ascii_uppercase + string.digits
+    return f"HVAC-{''.join(random.choices(chars, k=6))}"
 
 def seed():
     db = sqlite3.connect(DATABASE)
@@ -76,12 +82,13 @@ def seed():
     existing = db.execute("SELECT COUNT(*) FROM complaints").fetchone()[0]
     if existing == 0:
         for c in complaints:
+            ticket_id = gen_ticket_id()
             db.execute("""
                 INSERT INTO complaints
-                (title, description, customer_name, customer_phone, job_site_id,
+                (ticket_id, title, description, customer_name, customer_phone, job_site_id,
                  technician_id, priority, category, status, created_by)
-                VALUES (?,?,?,?,?,?,?,?,?,?)
-            """, (*c, admin_id))
+                VALUES (?,?,?,?,?,?,?,?,?,?,?)
+            """, (ticket_id, *c, admin_id))
 
         # Add some notes
         db.execute("INSERT INTO complaint_notes (complaint_id, user_id, note) VALUES (?,?,?)",

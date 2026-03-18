@@ -3,7 +3,7 @@
 
 {% block content %}
 <div class="page-header">
-    <h1>Complaint #{{ complaint['id'] }}: {{ complaint['title'] }}</h1>
+    <h1>{{ complaint['ticket_id'] or '#' ~ complaint['id'] }}: {{ complaint['title'] }}</h1>
     <a href="{{ url_for('complaints_list') }}" class="btn btn-secondary">Back to List</a>
 </div>
 
@@ -46,6 +46,10 @@
                     <div class="value">{{ complaint['customer_phone'] or '—' }}</div>
                 </div>
                 <div class="detail-item">
+                    <div class="label">Email</div>
+                    <div class="value">{{ complaint['customer_email'] or '—' }}</div>
+                </div>
+                <div class="detail-item">
                     <div class="label">Technician</div>
                     <div class="value">{{ complaint['technician_name'] or 'Unassigned' }}</div>
                 </div>
@@ -59,7 +63,7 @@
                 </div>
                 <div class="detail-item">
                     <div class="label">Created By</div>
-                    <div class="value">{{ complaint['created_by_name'] or '—' }}</div>
+                    <div class="value">{{ complaint['created_by_name'] or 'Client Portal' }}</div>
                 </div>
                 {% if complaint['resolved_at'] %}
                 <div class="detail-item">
