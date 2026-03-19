@@ -9,7 +9,7 @@
 
 {% if repeat_history %}
 <div class="alert alert-danger repeat-alert">
-    <strong>Repeat Complaint Flag:</strong> This client (<strong>{{ complaint['customer_name'] }}</strong>) has filed <strong>{{ repeat_history|length + 1 }}</strong> complaints against technician <strong>{{ complaint['technician_name'] }}</strong>. This pattern may require management attention.
+    <strong>Repeat Complaint Flag:</strong> This site (<strong>{{ complaint['site_name'] or 'Unknown' }}</strong>) has filed <strong>{{ repeat_history|length + 1 }}</strong> complaints against technician <strong>{{ complaint['technician_name'] }}</strong>. This pattern may require management attention.
     <div class="repeat-history-mini">
         <strong>Previous complaints:</strong>
         <ul style="margin:6px 0 0 16px;">

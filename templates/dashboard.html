@@ -119,22 +119,22 @@
     </div>
 </div>
 
-<!-- Repeat Complaint Alerts: Client vs Technician -->
+<!-- Repeat Complaint Alerts: Job Site vs Technician -->
 {% if repeat_alerts %}
 <div class="card repeat-alerts-card">
     <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
-        <span>Repeat Complaint Alerts (Client vs Technician)</span>
+        <span>Repeat Complaint Alerts (Client Site vs Technician)</span>
         {% if session.get('role') == 'admin' %}
         <a href="{{ url_for('accountability') }}" class="btn btn-sm btn-danger">View Full Report</a>
         {% endif %}
     </div>
     <div class="table-wrap">
         <table>
-            <thead><tr><th>Client</th><th>Technician</th><th>Complaints</th><th>Still Active</th><th>Latest</th></tr></thead>
+            <thead><tr><th>Client Site</th><th>Technician</th><th>Complaints</th><th>Still Active</th><th>Latest</th></tr></thead>
             <tbody>
                 {% for row in repeat_alerts %}
                 <tr class="repeat-row">
-                    <td>{{ row['customer_name'] }}</td>
+                    <td>{{ row['site_name'] }}</td>
                     <td>{{ row['technician_name'] }}</td>
                     <td><span class="badge badge-repeat">{{ row['complaint_count'] }}x</span></td>
                     <td>{% if row['active_count'] > 0 %}<span style="color:var(--danger); font-weight:600;">{{ row['active_count'] }}</span>{% else %}0{% endif %}</td>
@@ -174,16 +174,16 @@
 </div>
 {% endif %}
 
-<!-- Repeat Customers -->
+<!-- Repeat Clients (by Job Site) -->
 {% if repeat_customers %}
 <div class="card">
-    <div class="card-header">Repeat Complainants</div>
+    <div class="card-header">Repeat Clients</div>
     <div class="table-wrap">
         <table>
-            <thead><tr><th>Customer Name</th><th>Complaint Count</th></tr></thead>
+            <thead><tr><th>Client (Job Site)</th><th>Complaint Count</th></tr></thead>
             <tbody>
                 {% for row in repeat_customers %}
-                <tr><td>{{ row['customer_name'] }}</td><td>{{ row['complaint_count'] }}</td></tr>
+                <tr><td>{{ row['site_name'] }}</td><td>{{ row['complaint_count'] }}</td></tr>
                 {% endfor %}
             </tbody>
         </table>

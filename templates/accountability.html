@@ -17,7 +17,7 @@
                     <th>Technician</th>
                     <th>Total Complaints</th>
                     <th>Active</th>
-                    <th>Repeat Clients</th>
+                    <th>Repeat Sites</th>
                     <th>Repeat Complaints</th>
                     <th>Repeat Rate</th>
                 </tr>
@@ -30,7 +30,7 @@
                     <td>{% if t['active_complaints'] and t['active_complaints'] > 0 %}<span style="color:var(--danger); font-weight:600;">{{ t['active_complaints'] }}</span>{% else %}0{% endif %}</td>
                     <td>
                         {% if t['repeat_clients'] and t['repeat_clients'] > 0 %}
-                        <span class="badge badge-repeat">{{ t['repeat_clients'] }} client{{ 's' if t['repeat_clients'] != 1 else '' }}</span>
+                        <span class="badge badge-repeat">{{ t['repeat_clients'] }} site{{ 's' if t['repeat_clients'] != 1 else '' }}</span>
                         {% else %}
                         0
                         {% endif %}
@@ -55,12 +55,12 @@
 <!-- Repeat Complaint Pairs -->
 {% if repeat_pairs %}
 <div class="card repeat-alerts-card">
-    <div class="card-header">Flagged: Repeat Complaints (Same Client + Same Technician)</div>
+    <div class="card-header">Flagged: Repeat Complaints (Same Client Site + Same Technician)</div>
     <div class="table-wrap">
         <table>
             <thead>
                 <tr>
-                    <th>Client</th>
+                    <th>Client Site</th>
                     <th>Technician</th>
                     <th>Complaints</th>
                     <th>Still Active</th>
@@ -73,14 +73,14 @@
             <tbody>
                 {% for r in repeat_pairs %}
                 <tr class="repeat-row">
-                    <td><strong>{{ r['customer_name'] }}</strong></td>
+                    <td><strong>{{ r['site_name'] }}</strong></td>
                     <td>{{ r['technician_name'] }}</td>
                     <td><span class="badge badge-repeat">{{ r['complaint_count'] }}x</span></td>
                     <td>{% if r['active_count'] > 0 %}<span style="color:var(--danger); font-weight:600;">{{ r['active_count'] }}</span>{% else %}0{% endif %}</td>
                     <td>{{ r['categories'] or '—' }}</td>
                     <td>{{ r['first_complaint'][:10] }}</td>
                     <td>{{ r['latest_complaint'][:10] }}</td>
-                    <td><a href="{{ url_for('complaints_list', search=r['customer_name'], technician=r['technician_id']) }}" class="btn btn-sm btn-secondary">View All</a></td>
+                    <td><a href="{{ url_for('complaints_list', search=r['site_name'], technician=r['technician_id']) }}" class="btn btn-sm btn-secondary">View All</a></td>
                 </tr>
                 {% endfor %}
             </tbody>

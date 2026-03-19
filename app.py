@@ -355,25 +355,28 @@ def dashboard():
         LIMIT 10
     """).fetchall()
 
-    # Repeat customers
+    # Repeat clients (by job site)
     repeat_customers = db.execute("""
-        SELECT customer_name, COUNT(*) as complaint_count
-        FROM complaints
-        GROUP BY LOWER(customer_name)
+        SELECT js.name as site_name, COUNT(*) as complaint_count
+        FROM complaints c
+        JOIN job_sites js ON c.job_site_id = js.id
+        GROUP BY c.job_site_id
         HAVING COUNT(*) > 1
         ORDER BY complaint_count DESC
         LIMIT 10
     """).fetchall()
 
-    # Repeat complaint alerts: same client complaining about same technician
+    # Repeat complaint alerts: same job site + same technician
     repeat_alerts = db.execute("""
-        SELECT c.customer_name, u.full_name as technician_name, c.technician_id,
+        SELECT js.name as site_name, u.full_name as technician_name, c.technician_id,
+               c.job_site_id,
                COUNT(*) as complaint_count,
                SUM(CASE WHEN c.status IN ('open', 'in_progress') THEN 1 ELSE 0 END) as active_count,
                MAX(c.created_at) as latest_complaint
         FROM complaints c
         JOIN users u ON c.technician_id = u.id
-        GROUP BY LOWER(c.customer_name), c.technician_id
+        JOIN job_sites js ON c.job_site_id = js.id
+        GROUP BY c.job_site_id, c.technician_id
         HAVING COUNT(*) > 1
         ORDER BY complaint_count DESC, latest_complaint DESC
     """).fetchall()
@@ -440,16 +443,16 @@ def complaints_list():
     tech_filter = request.args.get("technician", "")
     search = request.args.get("search", "").strip()
 
-    # Build a set of (customer_name, technician_id) pairs that have repeat complaints
+    # Build a set of (job_site_id, technician_id) pairs that have repeat complaints
     repeat_pairs = db.execute("""
-        SELECT LOWER(customer_name) as cname, technician_id, COUNT(*) as cnt
+        SELECT job_site_id, technician_id, COUNT(*) as cnt
         FROM complaints
-        WHERE technician_id IS NOT NULL
-        GROUP BY LOWER(customer_name), technician_id
+        WHERE technician_id IS NOT NULL AND job_site_id IS NOT NULL
+        GROUP BY job_site_id, technician_id
         HAVING COUNT(*) > 1
     """).fetchall()
-    repeat_set = {(r['cname'], r['technician_id']) for r in repeat_pairs}
-    repeat_counts = {(r['cname'], r['technician_id']): r['cnt'] for r in repeat_pairs}
+    repeat_set = {(r['job_site_id'], r['technician_id']) for r in repeat_pairs}
+    repeat_counts = {(r['job_site_id'], r['technician_id']): r['cnt'] for r in repeat_pairs}
 
     query = """
         SELECT c.*, u.full_name as technician_name, js.name as site_name,
@@ -578,17 +581,17 @@ def view_complaint(complaint_id):
     technicians = db.execute("SELECT id, full_name FROM users WHERE role='technician' ORDER BY full_name").fetchall()
     job_sites = db.execute("SELECT id, name, site_type FROM job_sites ORDER BY site_type, name").fetchall()
 
-    # Check for repeat complaints: same customer + same technician
+    # Check for repeat complaints: same job site + same technician
     repeat_history = []
-    if complaint['technician_id']:
+    if complaint['technician_id'] and complaint['job_site_id']:
         repeat_history = db.execute("""
             SELECT c.id, c.ticket_id, c.title, c.category, c.status, c.created_at
             FROM complaints c
-            WHERE LOWER(c.customer_name) = LOWER(?)
+            WHERE c.job_site_id = ?
               AND c.technician_id = ?
               AND c.id != ?
             ORDER BY c.created_at DESC
-        """, (complaint['customer_name'], complaint['technician_id'], complaint_id)).fetchall()
+        """, (complaint['job_site_id'], complaint['technician_id'], complaint_id)).fetchall()
 
     return render_template("view_complaint.html", complaint=complaint,
         notes=notes, technicians=technicians, job_sites=job_sites,
@@ -658,9 +661,10 @@ def add_note(complaint_id):
 def accountability():
     db = get_db()
 
-    # All repeat complaint pairs: same client + same technician
+    # All repeat complaint pairs: same job site + same technician
     repeat_pairs = db.execute("""
-        SELECT c.customer_name, u.full_name as technician_name, u.id as technician_id,
+        SELECT js.name as site_name, u.full_name as technician_name, u.id as technician_id,
+               c.job_site_id,
                COUNT(*) as complaint_count,
                SUM(CASE WHEN c.status IN ('open', 'in_progress') THEN 1 ELSE 0 END) as active_count,
                MIN(c.created_at) as first_complaint,
@@ -668,28 +672,29 @@ def accountability():
                GROUP_CONCAT(DISTINCT c.category) as categories
         FROM complaints c
         JOIN users u ON c.technician_id = u.id
-        GROUP BY LOWER(c.customer_name), c.technician_id
+        JOIN job_sites js ON c.job_site_id = js.id
+        GROUP BY c.job_site_id, c.technician_id
         HAVING COUNT(*) > 1
         ORDER BY complaint_count DESC, latest_complaint DESC
     """).fetchall()
 
-    # Technician summary: total complaints, repeat complaint count, unique repeat clients
+    # Technician summary: total complaints, repeat complaint count, unique repeat sites
     tech_summary = db.execute("""
         SELECT u.id, u.full_name,
                COUNT(c.id) as total_complaints,
                SUM(CASE WHEN c.status IN ('open', 'in_progress') THEN 1 ELSE 0 END) as active_complaints,
                (SELECT COUNT(*) FROM (
-                   SELECT LOWER(c2.customer_name)
+                   SELECT c2.job_site_id
                    FROM complaints c2
-                   WHERE c2.technician_id = u.id
-                   GROUP BY LOWER(c2.customer_name)
+                   WHERE c2.technician_id = u.id AND c2.job_site_id IS NOT NULL
+                   GROUP BY c2.job_site_id
                    HAVING COUNT(*) > 1
                )) as repeat_clients,
                (SELECT SUM(sub.cnt) FROM (
                    SELECT COUNT(*) as cnt
                    FROM complaints c3
-                   WHERE c3.technician_id = u.id
-                   GROUP BY LOWER(c3.customer_name)
+                   WHERE c3.technician_id = u.id AND c3.job_site_id IS NOT NULL
+                   GROUP BY c3.job_site_id
                    HAVING COUNT(*) > 1
                ) sub) as repeat_complaint_count
         FROM users u
