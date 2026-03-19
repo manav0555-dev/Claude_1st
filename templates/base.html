@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Air Excel HVAC Solutions{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/logo.svg') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/logo.png') }}">
 </head>
 <body>
 {% block body %}
 <div class="app-layout">
     <nav class="sidebar">
         <div class="sidebar-brand">
-            <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="AEH Logo" class="sidebar-logo">
+            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="AEH Logo" class="sidebar-logo">
             <span>Air Excel HVAC</span>
         </div>
         <ul class="sidebar-nav">
