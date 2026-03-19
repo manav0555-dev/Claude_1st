@@ -85,6 +85,97 @@ def init_db():
             ("admin", pw_hash, "admin", "System Admin"),
         )
         db.commit()
+
+    # Seed technicians if none exist
+    tech_count = db.execute("SELECT COUNT(*) FROM users WHERE role='technician'").fetchone()[0]
+    if tech_count == 0:
+        technicians = [
+            ("nkumar", "tech123", "technician", "Narendra Kumar"),
+            ("shahrukh", "tech123", "technician", "Shahrukh"),
+            ("sonu", "tech123", "technician", "Sonu"),
+            ("rahul", "tech123", "technician", "Rahul"),
+            ("amjad", "tech123", "technician", "Amjad"),
+        ]
+        for uname, pw, role, name in technicians:
+            try:
+                db.execute(
+                    "INSERT INTO users (username, password_hash, role, full_name) VALUES (?,?,?,?)",
+                    (uname, hashlib.sha256(pw.encode()).hexdigest(), role, name),
+                )
+            except sqlite3.IntegrityError:
+                pass
+        db.commit()
+
+    # Seed job sites if none exist
+    site_count = db.execute("SELECT COUNT(*) FROM job_sites").fetchone()[0]
+    if site_count == 0:
+        installation_sites = [
+            "Nobel Jewellers Kamla Nagar",
+            "AIHP - Mandi Goan",
+            "RML Hospital",
+            "Kalyan - Palwal",
+            "Sunrydge",
+        ]
+        amc_sites = [
+            "Sunrise Sports - Delhi",
+            "Sunrise Sports - Noida",
+            "RINL",
+            "Allied Agency",
+            "Raghav Bindal",
+            "Delhi Sikh Gurudwara",
+            "Furniturewalla",
+            "ITL Public School - Dwarka",
+            "ITL Public School - Candy Flow",
+            "The Indian School",
+            "SSP Pvt Ltd",
+            "World Wide Fund",
+            "Link & Time",
+            "Lokyaman Multi Purpose",
+            "ICICI Bank",
+            "Kalyan - Kamla Nagar",
+            "Kalyan - Rajouri Garden",
+            "Kalyan - Janak Puri",
+            "Kalyan - South Ext",
+            "Kalyan - NSP Pitampura",
+            "Kalyan - Kohat Enclave",
+            "Kalyan - Nirman Vihar",
+            "Kalyan - Karol Bagh",
+            "Kalyan - Shahdra",
+            "Kalyan - Kailash Colony",
+            "Kalyan - Paschim Vihar",
+            "Kalyan - Ghaziabad",
+            "Kalyan - Rohini",
+            "Haldiram Central Market",
+            "Haldiram - Ring Road",
+            "Haldiram - Gwal Pahari",
+            "Haldiram - Paras Trade Centre",
+            "Tata Starbucks - GK 1 & Pusa Road",
+            "Tata Starbucks - Paschim Vihar",
+            "Tata Starbucks - Green Park",
+            "Tata Starbucks - Model Town",
+            "Jai Shree Bindal",
+            "Tata Starbucks - GK 1",
+            "New Delhi Centre For Sight",
+            "Hora Art Centre - Noida",
+            "Allied Agency - 2nd Site",
+            "Lord Education",
+            "Raghav Bindal - 2nd Site",
+            "Allied Agency - 3rd Site",
+            "SSAR - Darya Ganj",
+            "Amazon",
+        ]
+        for name in installation_sites:
+            try:
+                db.execute("INSERT INTO job_sites (name, site_type) VALUES (?,?)", (name, "Installation"))
+            except sqlite3.IntegrityError:
+                pass
+        for name in amc_sites:
+            try:
+                db.execute("INSERT INTO job_sites (name, site_type) VALUES (?,?)", (name, "AMC"))
+            except sqlite3.IntegrityError:
+                pass
+        db.commit()
+
     db.close()
 
 
