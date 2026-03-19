@@ -591,8 +591,10 @@ def client_track():
     return render_template("client_track.html", complaint=complaint, searched=searched)
 
 
+# ── Init DB on import (needed for gunicorn) ─────────────────────────────────
+init_db()
+
 # ── Run ─────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    init_db()
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(debug=os.environ.get("FLASK_DEBUG", "1") == "1", host="0.0.0.0", port=5000)
