@@ -86,8 +86,10 @@
     width: 90px;
     height: 90px;
     margin-bottom: 16px;
-    filter: brightness(0) invert(1);
-    opacity: .9;
+    border-radius: 12px;
+    background: var(--white);
+    padding: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.15);
 }
 
 .client-hero h1 {
