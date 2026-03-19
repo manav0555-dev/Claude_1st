@@ -99,7 +99,7 @@ def _get_worksheet():
         # Try to get existing 'Complaints' worksheet, or use first sheet
         try:
             worksheet = spreadsheet.worksheet("Complaints")
-        except gspread.exceptions.WorksheetNotFound:
+        except Exception:
             worksheet = spreadsheet.sheet1
             worksheet.update_title("Complaints")
 
@@ -149,17 +149,16 @@ def sync_complaint(complaint):
             if not worksheet:
                 return False
 
-            gspread = _get_gspread()
             ticket_id = complaint.get("ticket_id", "")
             row_data = _complaint_to_row(complaint)
 
             # Search for existing row by ticket_id
-            try:
-                cell = worksheet.find(ticket_id, in_column=1)
+            cell = worksheet.find(ticket_id, in_column=1)
+            if cell:
                 # Update existing row
                 worksheet.update(f"A{cell.row}:N{cell.row}", [row_data])
                 logger.info("Updated ticket %s in Google Sheets (row %d)", ticket_id, cell.row)
-            except gspread.exceptions.CellNotFound:
+            else:
                 # Append new row
                 worksheet.append_row(row_data, value_input_option="USER_ENTERED")
                 logger.info("Added ticket %s to Google Sheets", ticket_id)
