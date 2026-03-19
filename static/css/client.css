@@ -304,11 +304,35 @@
     color: var(--gray-700);
 }
 
-/* ── Responsive ──────────────────────────────────────────────────────── */
+/* ── Responsive: Tablet ──────────────────────────────────────────────── */
 @media (max-width: 768px) {
+    .client-header-inner { padding: 12px 16px; }
+    .client-logo { font-size: 1rem; }
+    .client-nav { gap: 16px; }
+    .client-nav a { font-size: .85rem; }
+    .client-main { padding: 20px 16px; }
+    .client-hero { padding: 40px 16px; margin-bottom: 28px; }
     .client-hero h1 { font-size: 1.6rem; }
-    .client-info-grid { grid-template-columns: 1fr; }
+    .client-hero p { font-size: 1rem; margin-bottom: 20px; }
+    .hero-logo { width: 64px; height: 64px; }
+    .btn-lg { padding: 12px 24px; font-size: .95rem; }
+    .client-info-grid { grid-template-columns: 1fr; gap: 16px; margin-bottom: 28px; }
+    .client-info-card { padding: 20px 16px; }
     .track-search-row { flex-direction: column; }
     .track-detail-row { flex-direction: column; gap: 4px; }
     .track-label { width: auto; }
+    .client-success-actions { flex-direction: column; }
+    .client-success-actions .btn { width: 100%; justify-content: center; }
+    .ticket-number { font-size: 1.6rem; }
+}
+
+/* ── Responsive: Small phones ───────────────────────────────────────── */
+@media (max-width: 480px) {
+    .client-header-inner { flex-direction: column; gap: 8px; }
+    .client-logo { font-size: .95rem; }
+    .client-hero h1 { font-size: 1.3rem; }
+    .client-hero p { font-size: .9rem; }
+    .client-hero-actions { flex-direction: column; }
+    .client-hero-actions .btn { width: 100%; justify-content: center; }
+    .client-form-page h1 { font-size: 1.3rem; }
 }

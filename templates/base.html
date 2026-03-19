@@ -10,10 +10,24 @@
 <body>
 {% block body %}
 <div class="app-layout">
-    <nav class="sidebar">
+    <!-- Mobile top bar -->
+    <div class="mobile-topbar">
+        <button class="hamburger" id="menuToggle" aria-label="Open menu">
+            <span></span><span></span><span></span>
+        </button>
+        <div class="mobile-topbar-brand">
+            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="AEH Logo" class="sidebar-logo">
+            <span>Air Excel HVAC</span>
+        </div>
+        <div class="mobile-topbar-spacer"></div>
+    </div>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <nav class="sidebar" id="sidebar">
         <div class="sidebar-brand">
             <img src="{{ url_for('static', filename='img/logo.png') }}" alt="AEH Logo" class="sidebar-logo">
             <span>Air Excel HVAC</span>
+            <button class="sidebar-close" id="menuClose" aria-label="Close menu">&times;</button>
         </div>
         <ul class="sidebar-nav">
             <li><a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}active{% endif %}">&#9632; Dashboard</a></li>
@@ -43,5 +57,21 @@
     </main>
 </div>
 {% endblock %}
+<script>
+(function(){
+    var toggle = document.getElementById('menuToggle');
+    var close = document.getElementById('menuClose');
+    var overlay = document.getElementById('sidebarOverlay');
+    var sidebar = document.getElementById('sidebar');
+    if (!toggle) return;
+    function openMenu() { sidebar.classList.add('open'); overlay.classList.add('active'); document.body.classList.add('menu-open'); }
+    function closeMenu() { sidebar.classList.remove('open'); overlay.classList.remove('active'); document.body.classList.remove('menu-open'); }
+    toggle.addEventListener('click', openMenu);
+    close.addEventListener('click', closeMenu);
+    overlay.addEventListener('click', closeMenu);
+    // Close on nav link click (mobile)
+    sidebar.querySelectorAll('.sidebar-nav a').forEach(function(a){ a.addEventListener('click', closeMenu); });
+})();
+</script>
 </body>
 </html>
