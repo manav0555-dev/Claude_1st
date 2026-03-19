@@ -52,13 +52,30 @@
 
         <div class="form-row">
             <div class="form-group">
-                <label for="job_site_id">Job Site</label>
-                <select id="job_site_id" name="job_site_id" class="form-control">
-                    <option value="">Select site...</option>
-                    {% for s in job_sites %}
-                    <option value="{{ s['id'] }}">{{ s['name'] }}</option>
-                    {% endfor %}
+                <label for="job_site_id">Client / Site</label>
+                <select id="job_site_id" name="job_site_id" class="form-control" onchange="toggleOtherSite(this)">
+                    <option value="">Select client...</option>
+                    <optgroup label="Installation Work Running">
+                        {% for s in job_sites if s['site_type'] == 'Installation' %}
+                        <option value="{{ s['id'] }}">{{ s['name'] }}</option>
+                        {% endfor %}
+                    </optgroup>
+                    <optgroup label="AMC">
+                        {% for s in job_sites if s['site_type'] == 'AMC' %}
+                        <option value="{{ s['id'] }}">{{ s['name'] }}</option>
+                        {% endfor %}
+                    </optgroup>
+                    {% if job_sites|selectattr('site_type', 'equalto', 'Other')|list %}
+                    <optgroup label="Other">
+                        {% for s in job_sites if s['site_type'] == 'Other' %}
+                        <option value="{{ s['id'] }}">{{ s['name'] }}</option>
+                        {% endfor %}
+                    </optgroup>
+                    {% endif %}
+                    <option value="other">-- Other (type client name) --</option>
                 </select>
+                <input type="text" id="other_site_name" name="other_site_name" class="form-control"
+                       placeholder="Enter client / site name" style="display:none; margin-top:8px;">
             </div>
             <div class="form-group">
                 <label for="technician_id">Assign Technician</label>
@@ -85,4 +102,11 @@
         <button type="submit" class="btn btn-primary">Create Complaint</button>
     </form>
 </div>
+<script>
+function toggleOtherSite(sel) {
+    var inp = document.getElementById('other_site_name');
+    inp.style.display = sel.value === 'other' ? 'block' : 'none';
+    if (sel.value !== 'other') inp.value = '';
+}
+</script>
 {% endblock %}

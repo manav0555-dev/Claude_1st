@@ -64,6 +64,10 @@ def init_db():
         db.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_ticket_id ON complaints(ticket_id)")
     if "customer_email" not in cols:
         db.execute("ALTER TABLE complaints ADD COLUMN customer_email TEXT")
+    # Migrate: add site_type column to job_sites if missing
+    site_cols = [r[1] for r in db.execute("PRAGMA table_info(job_sites)").fetchall()]
+    if "site_type" not in site_cols:
+        db.execute("ALTER TABLE job_sites ADD COLUMN site_type TEXT NOT NULL DEFAULT 'AMC'")
     # Back-fill ticket IDs for any existing complaints without one
     rows = db.execute("SELECT id FROM complaints WHERE ticket_id IS NULL").fetchall()
     for row in rows:
@@ -98,6 +102,7 @@ CREATE TABLE IF NOT EXISTS job_sites (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT UNIQUE NOT NULL,
     address TEXT,
+    site_type TEXT NOT NULL DEFAULT 'AMC' CHECK(site_type IN ('Installation', 'AMC', 'Other')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -357,6 +362,12 @@ def new_complaint():
         customer_name = request.form.get("customer_name", "").strip()
         customer_phone = request.form.get("customer_phone", "").strip()
         job_site_id = request.form.get("job_site_id") or None
+        other_site_name = request.form.get("other_site_name", "").strip()
+        if job_site_id == "other" and other_site_name:
+            cursor = db.execute("INSERT INTO job_sites (name, site_type) VALUES (?,?)", (other_site_name, "Other"))
+            job_site_id = cursor.lastrowid
+        elif job_site_id == "other":
+            job_site_id = None
         technician_id = request.form.get("technician_id") or None
         priority = int(request.form.get("priority", 3))
         category = request.form.get("category", "").strip() or None
@@ -381,7 +392,7 @@ def new_complaint():
             return redirect(url_for("complaints_list"))
 
     technicians = db.execute("SELECT id, full_name FROM users WHERE role='technician' ORDER BY full_name").fetchall()
-    job_sites = db.execute("SELECT id, name FROM job_sites ORDER BY name").fetchall()
+    job_sites = db.execute("SELECT id, name, site_type FROM job_sites ORDER BY site_type, name").fetchall()
     return render_template("new_complaint.html", technicians=technicians, job_sites=job_sites)
 
 
@@ -412,7 +423,7 @@ def view_complaint(complaint_id):
     """, (complaint_id,)).fetchall()
 
     technicians = db.execute("SELECT id, full_name FROM users WHERE role='technician' ORDER BY full_name").fetchall()
-    job_sites = db.execute("SELECT id, name FROM job_sites ORDER BY name").fetchall()
+    job_sites = db.execute("SELECT id, name, site_type FROM job_sites ORDER BY site_type, name").fetchall()
 
     return render_template("view_complaint.html", complaint=complaint,
         notes=notes, technicians=technicians, job_sites=job_sites)
@@ -492,10 +503,13 @@ def manage_sites():
 def add_site():
     name = request.form.get("name", "").strip()
     address = request.form.get("address", "").strip()
+    site_type = request.form.get("site_type", "AMC").strip()
+    if site_type not in ("Installation", "AMC", "Other"):
+        site_type = "AMC"
     if name:
         db = get_db()
         try:
-            db.execute("INSERT INTO job_sites (name, address) VALUES (?,?)", (name, address))
+            db.execute("INSERT INTO job_sites (name, address, site_type) VALUES (?,?,?)", (name, address, site_type))
             db.commit()
             flash(f"Site '{name}' added.", "success")
         except sqlite3.IntegrityError:
@@ -599,6 +613,12 @@ def client_submit():
         customer_phone = request.form.get("customer_phone", "").strip()
         customer_email = request.form.get("customer_email", "").strip()
         job_site_id = request.form.get("job_site_id") or None
+        other_site_name = request.form.get("other_site_name", "").strip()
+        if job_site_id == "other" and other_site_name:
+            cursor = db.execute("INSERT INTO job_sites (name, site_type) VALUES (?,?)", (other_site_name, "Other"))
+            job_site_id = cursor.lastrowid
+        elif job_site_id == "other":
+            job_site_id = None
         category = request.form.get("category", "").strip() or None
         description = request.form.get("description", "").strip()
 
@@ -621,7 +641,7 @@ def client_submit():
                 google_sheets.sync_complaint(dict(complaint_row))
             return redirect(url_for("client_success", ticket_id=ticket_id))
 
-    job_sites = db.execute("SELECT id, name FROM job_sites ORDER BY name").fetchall()
+    job_sites = db.execute("SELECT id, name, site_type FROM job_sites ORDER BY site_type, name").fetchall()
     return render_template("client_submit.html", job_sites=job_sites)
 
 
