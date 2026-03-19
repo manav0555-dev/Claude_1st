@@ -3,8 +3,12 @@
 
 {% block content %}
 <div class="page-header">
+    {% if session.get('role') == 'technician' %}
+    <h1>My Assigned Complaints</h1>
+    {% else %}
     <h1>Complaints Queue</h1>
     <a href="{{ url_for('new_complaint') }}" class="btn btn-primary">+ New Complaint</a>
+    {% endif %}
 </div>
 
 <form method="GET" class="filters-bar">

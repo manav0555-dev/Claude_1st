@@ -523,6 +523,9 @@ def view_complaint(complaint_id):
 @app.route("/complaints/<int:complaint_id>/update", methods=["POST"])
 @login_required
 def update_complaint(complaint_id):
+    if session.get("role") != "admin":
+        flash("Only admins can update complaints.", "danger")
+        return redirect(url_for("view_complaint", complaint_id=complaint_id))
     db = get_db()
     status = request.form.get("status")
     technician_id = request.form.get("technician_id") or None

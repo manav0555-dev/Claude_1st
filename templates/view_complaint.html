@@ -99,7 +99,8 @@
         </div>
     </div>
 
-    <!-- Right: Actions -->
+    <!-- Right: Actions (admin only) -->
+    {% if session.get('role') == 'admin' %}
     <div>
         <div class="card">
             <div class="card-header">Update Complaint</div>
@@ -123,7 +124,6 @@
                     </select>
                 </div>
 
-                {% if session.get('role') == 'admin' %}
                 <div class="form-group">
                     <label for="technician_id">Assign Technician</label>
                     <select id="technician_id" name="technician_id" class="form-control">
@@ -133,11 +133,11 @@
                         {% endfor %}
                     </select>
                 </div>
-                {% endif %}
 
                 <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">Update</button>
             </form>
         </div>
     </div>
+    {% endif %}
 </div>
 {% endblock %}
