@@ -85,6 +85,7 @@
                     <option value="{{ t['id'] }}">{{ t['full_name'] }}</option>
                     {% endfor %}
                 </select>
+                <small id="auto-assign-hint" style="display:none; color:var(--primary, #2563eb); margin-top:4px; font-weight:500;"></small>
             </div>
         </div>
 
@@ -107,6 +108,33 @@ function toggleOtherSite(sel) {
     var inp = document.getElementById('other_site_name');
     inp.style.display = sel.value === 'other' ? 'block' : 'none';
     if (sel.value !== 'other') inp.value = '';
+
+    // Auto-assign technician based on last assignment for this site
+    var techSelect = document.getElementById('technician_id');
+    var autoHint = document.getElementById('auto-assign-hint');
+    if (sel.value && sel.value !== 'other' && sel.value !== '') {
+        fetch('/api/site-technician/' + sel.value)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.technician_id) {
+                    techSelect.value = data.technician_id;
+                    if (autoHint) {
+                        autoHint.textContent = 'Auto-assigned: ' + data.technician_name + ' (last handled this site)';
+                        autoHint.style.display = 'block';
+                    }
+                } else {
+                    if (autoHint) {
+                        autoHint.textContent = '';
+                        autoHint.style.display = 'none';
+                    }
+                }
+            });
+    } else {
+        if (autoHint) {
+            autoHint.textContent = '';
+            autoHint.style.display = 'none';
+        }
+    }
 }
 </script>
 {% endblock %}

@@ -393,11 +393,28 @@ def dashboard():
         ORDER BY cnt DESC
     """).fetchall()
 
+    # Repeat sites: job sites with more than 1 complaint
+    repeat_sites = db.execute("""
+        SELECT js.name as site_name, js.id as site_id, js.site_type,
+               COUNT(c.id) as complaint_count,
+               SUM(CASE WHEN c.status IN ('open', 'in_progress') THEN 1 ELSE 0 END) as active_count,
+               MAX(c.created_at) as latest_complaint,
+               (SELECT u.full_name FROM complaints c2
+                JOIN users u ON c2.technician_id = u.id
+                WHERE c2.job_site_id = js.id
+                ORDER BY c2.created_at DESC LIMIT 1) as last_technician
+        FROM complaints c
+        JOIN job_sites js ON c.job_site_id = js.id
+        GROUP BY c.job_site_id
+        HAVING COUNT(c.id) > 1
+        ORDER BY complaint_count DESC, latest_complaint DESC
+    """).fetchall()
+
     return render_template("dashboard.html",
         total=total, open_count=open_count, in_progress=in_progress,
         resolved=resolved, priority_data=priority_data,
         repeat_technicians=repeat_technicians, repeat_customers=repeat_customers,
-        repeat_alerts=repeat_alerts,
+        repeat_alerts=repeat_alerts, repeat_sites=repeat_sites,
         category_data=category_data, recent=recent, site_data=site_data)
 
 
@@ -755,6 +772,24 @@ def api_insights():
         "monthly_trend": [{"month": r["month"], "count": r["cnt"]} for r in monthly],
         "avg_resolution_hours": avg_resolution["avg_hours"] if avg_resolution["avg_hours"] else 0,
     })
+
+
+@app.route("/api/site-technician/<int:site_id>")
+@login_required
+def api_site_technician(site_id):
+    """Return the last technician assigned to a job site, for auto-assignment."""
+    db = get_db()
+    row = db.execute("""
+        SELECT c.technician_id, u.full_name as technician_name
+        FROM complaints c
+        JOIN users u ON c.technician_id = u.id
+        WHERE c.job_site_id = ?
+        ORDER BY c.created_at DESC
+        LIMIT 1
+    """, (site_id,)).fetchone()
+    if row:
+        return jsonify({"technician_id": row["technician_id"], "technician_name": row["technician_name"]})
+    return jsonify({"technician_id": None, "technician_name": None})
 
 
 # ── Google Sheets Sync ─────────────────────────────────────────────────────

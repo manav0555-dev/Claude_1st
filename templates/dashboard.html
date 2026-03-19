@@ -147,6 +147,33 @@
 </div>
 {% endif %}
 
+<!-- Repeat Sites: Same job site with multiple complaints -->
+{% if repeat_sites %}
+<div class="card repeat-alerts-card">
+    <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <span>Repeat Complaints by Site</span>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Job Site</th><th>Type</th><th>Complaints</th><th>Still Active</th><th>Last Technician</th><th>Latest</th><th>Action</th></tr></thead>
+            <tbody>
+                {% for row in repeat_sites %}
+                <tr class="repeat-row">
+                    <td><strong>{{ row['site_name'] }}</strong></td>
+                    <td><span class="badge badge-{{ 'info' if row['site_type'] == 'Installation' else ('success' if row['site_type'] == 'AMC' else 'secondary') }}">{{ row['site_type'] }}</span></td>
+                    <td><span class="badge badge-repeat">{{ row['complaint_count'] }}x</span></td>
+                    <td>{% if row['active_count'] > 0 %}<span style="color:var(--danger); font-weight:600;">{{ row['active_count'] }}</span>{% else %}0{% endif %}</td>
+                    <td>{{ row['last_technician'] or '—' }}</td>
+                    <td>{{ row['latest_complaint'][:10] }}</td>
+                    <td><a href="{{ url_for('complaints_list', search=row['site_name']) }}" class="btn btn-sm btn-secondary">View All</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
 <!-- Repeat Customers -->
 {% if repeat_customers %}
 <div class="card">
