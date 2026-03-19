@@ -399,7 +399,11 @@ def complaints_list():
     search = request.args.get("search", "").strip()
 
     query = """
-        SELECT c.*, u.full_name as technician_name, js.name as site_name
+        SELECT c.*, u.full_name as technician_name, js.name as site_name,
+            CAST(julianday('now') - julianday(c.created_at) AS INTEGER) as days_open,
+            CASE WHEN c.resolved_at IS NOT NULL
+                THEN CAST(julianday(c.resolved_at) - julianday(c.created_at) AS INTEGER)
+                ELSE NULL END as days_to_close
         FROM complaints c
         LEFT JOIN users u ON c.technician_id = u.id
         LEFT JOIN job_sites js ON c.job_site_id = js.id
@@ -493,7 +497,11 @@ def view_complaint(complaint_id):
     db = get_db()
     complaint = db.execute("""
         SELECT c.*, u.full_name as technician_name, js.name as site_name,
-               creator.full_name as created_by_name
+               creator.full_name as created_by_name,
+               CAST(julianday('now') - julianday(c.created_at) AS INTEGER) as days_open,
+               CASE WHEN c.resolved_at IS NOT NULL
+                   THEN CAST(julianday(c.resolved_at) - julianday(c.created_at) AS INTEGER)
+                   ELSE NULL END as days_to_close
         FROM complaints c
         LEFT JOIN users u ON c.technician_id = u.id
         LEFT JOIN job_sites js ON c.job_site_id = js.id

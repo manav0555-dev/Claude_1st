@@ -65,10 +65,24 @@
                     <div class="label">Created By</div>
                     <div class="value">{{ complaint['created_by_name'] or 'Client Portal' }}</div>
                 </div>
+                <div class="detail-item">
+                    <div class="label">Days Open</div>
+                    <div class="value">
+                        <span style="font-weight:600; color:{% if complaint['days_open'] > 7 %}var(--danger){% elif complaint['days_open'] > 3 %}var(--warning, #e67e22){% else %}var(--success, #27ae60){% endif %};">
+                            {{ complaint['days_open'] }} day{{ 's' if complaint['days_open'] != 1 else '' }}
+                        </span>
+                    </div>
+                </div>
                 {% if complaint['resolved_at'] %}
                 <div class="detail-item">
                     <div class="label">Resolved At</div>
                     <div class="value">{{ complaint['resolved_at'] }}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="label">Days to Close</div>
+                    <div class="value">
+                        <span style="font-weight:600;">{{ complaint['days_to_close'] }} day{{ 's' if complaint['days_to_close'] != 1 else '' }}</span>
+                    </div>
                 </div>
                 {% endif %}
             </div>

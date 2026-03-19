@@ -44,7 +44,7 @@
                 <tr>
                     <th>Ticket</th><th>P</th><th>Title</th><th>Customer</th>
                     <th>Technician</th><th>Site</th><th>Category</th>
-                    <th>Status</th><th>Created</th>
+                    <th>Status</th><th>Days Open</th><th>Days to Close</th><th>Created</th>
                 </tr>
             </thead>
             <tbody>
@@ -58,11 +58,13 @@
                     <td>{{ c['site_name'] or '—' }}</td>
                     <td>{{ c['category'] or '—' }}</td>
                     <td><span class="badge badge-{{ c['status'] }}">{{ c['status']|replace('_',' ') }}</span></td>
+                    <td>{{ c['days_open'] }} day{{ 's' if c['days_open'] != 1 else '' }}</td>
+                    <td>{% if c['days_to_close'] is not none %}{{ c['days_to_close'] }} day{{ 's' if c['days_to_close'] != 1 else '' }}{% else %}—{% endif %}</td>
                     <td>{{ c['created_at'][:10] }}</td>
                 </tr>
                 {% endfor %}
                 {% if not complaints %}
-                <tr><td colspan="9" style="text-align:center; color:var(--gray-500); padding:24px;">No complaints found.</td></tr>
+                <tr><td colspan="11" style="text-align:center; color:var(--gray-500); padding:24px;">No complaints found.</td></tr>
                 {% endif %}
             </tbody>
         </table>
