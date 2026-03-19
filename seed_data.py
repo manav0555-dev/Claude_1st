@@ -20,11 +20,11 @@ def seed():
 
     # Technicians
     technicians = [
-        ("jsmith", "tech123", "technician", "John Smith"),
-        ("mwilson", "tech123", "technician", "Mike Wilson"),
-        ("ljones", "tech123", "technician", "Lisa Jones"),
-        ("rbrown", "tech123", "technician", "Robert Brown"),
-        ("akumar", "tech123", "technician", "Anil Kumar"),
+        ("nkumar", "tech123", "technician", "Narendra Kumar"),
+        ("shahrukh", "tech123", "technician", "Shahrukh"),
+        ("sonu", "tech123", "technician", "Sonu"),
+        ("rahul", "tech123", "technician", "Rahul"),
+        ("amjad", "tech123", "technician", "Amjad"),
     ]
     for uname, pw, role, name in technicians:
         try:
@@ -92,7 +92,7 @@ def seed():
 
         # Add some notes
         db.execute("INSERT INTO complaint_notes (complaint_id, user_id, note) VALUES (?,?,?)",
-                   (1, admin_id, "Dispatched John Smith to investigate. Customer says this has been going on for 2 days."))
+                   (1, admin_id, "Dispatched Narendra Kumar to investigate. Customer says this has been going on for 2 days."))
         db.execute("INSERT INTO complaint_notes (complaint_id, user_id, note) VALUES (?,?,?)",
                    (2, tech_ids[1], "On-site now. Found loose fan belt on RTU-4. Replacing belt and checking bearings."))
         db.execute("INSERT INTO complaint_notes (complaint_id, user_id, note) VALUES (?,?,?)",
