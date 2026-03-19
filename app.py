@@ -4,7 +4,7 @@ import hashlib
 import secrets
 import random
 import string
-from datetime import datetime
+from datetime import datetime, date
 from functools import wraps
 from flask import (
     Flask, render_template, request, redirect, url_for,
@@ -227,6 +227,17 @@ CREATE TABLE IF NOT EXISTS complaint_notes (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (complaint_id) REFERENCES complaints(id),
     FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS daily_plan (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    complaint_id INTEGER NOT NULL,
+    plan_date DATE NOT NULL,
+    added_by INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(complaint_id, plan_date),
+    FOREIGN KEY (complaint_id) REFERENCES complaints(id),
+    FOREIGN KEY (added_by) REFERENCES users(id)
 );
 """
 
@@ -824,6 +835,93 @@ def sync_sheets():
 def sheets_status():
     """Check if Google Sheets integration is configured."""
     return jsonify({"configured": google_sheets.is_configured()})
+
+
+# ── Daily Plan ──────────────────────────────────────────────────────────────
+
+@app.route("/daily-plan")
+@login_required
+def daily_plan():
+    db = get_db()
+    plan_date = request.args.get("date", date.today().isoformat())
+    role = session.get("role")
+    user_id = session.get("user_id")
+
+    # Get planned complaints for this date
+    if role == "admin":
+        planned = db.execute("""
+            SELECT c.*, js.name as site_name, u.full_name as technician_name,
+                   dp.id as plan_id
+            FROM daily_plan dp
+            JOIN complaints c ON dp.complaint_id = c.id
+            LEFT JOIN job_sites js ON c.job_site_id = js.id
+            LEFT JOIN users u ON c.technician_id = u.id
+            WHERE dp.plan_date = ?
+            ORDER BY u.full_name, js.name
+        """, (plan_date,)).fetchall()
+
+        # Get available complaints (open/in_progress, not already planned for this date)
+        available = db.execute("""
+            SELECT c.id, c.ticket_id, c.title, c.customer_name, c.priority,
+                   js.name as site_name, u.full_name as technician_name
+            FROM complaints c
+            LEFT JOIN job_sites js ON c.job_site_id = js.id
+            LEFT JOIN users u ON c.technician_id = u.id
+            WHERE c.status IN ('open', 'in_progress')
+              AND c.id NOT IN (SELECT complaint_id FROM daily_plan WHERE plan_date = ?)
+            ORDER BY c.priority ASC, c.created_at ASC
+        """, (plan_date,)).fetchall()
+
+        technicians = db.execute(
+            "SELECT id, full_name FROM users WHERE role='technician' ORDER BY full_name"
+        ).fetchall()
+    else:
+        # Technician: only their planned complaints
+        planned = db.execute("""
+            SELECT c.*, js.name as site_name, u.full_name as technician_name,
+                   dp.id as plan_id
+            FROM daily_plan dp
+            JOIN complaints c ON dp.complaint_id = c.id
+            LEFT JOIN job_sites js ON c.job_site_id = js.id
+            LEFT JOIN users u ON c.technician_id = u.id
+            WHERE dp.plan_date = ? AND c.technician_id = ?
+            ORDER BY js.name
+        """, (plan_date, user_id)).fetchall()
+        available = []
+        technicians = []
+
+    return render_template("daily_plan.html",
+        planned=planned, available=available, technicians=technicians,
+        plan_date=plan_date, role=role)
+
+
+@app.route("/daily-plan/add", methods=["POST"])
+@admin_required
+def daily_plan_add():
+    plan_date = request.form.get("plan_date", date.today().isoformat())
+    complaint_ids = request.form.getlist("complaint_ids")
+    db = get_db()
+    for cid in complaint_ids:
+        try:
+            db.execute("INSERT INTO daily_plan (complaint_id, plan_date, added_by) VALUES (?, ?, ?)",
+                       (int(cid), plan_date, session["user_id"]))
+        except Exception:
+            pass  # skip duplicates
+    db.commit()
+    flash(f"Added {len(complaint_ids)} complaint(s) to the daily plan.", "success")
+    return redirect(url_for("daily_plan", date=plan_date))
+
+
+@app.route("/daily-plan/remove/<int:plan_id>", methods=["POST"])
+@admin_required
+def daily_plan_remove(plan_id):
+    db = get_db()
+    row = db.execute("SELECT plan_date FROM daily_plan WHERE id = ?", (plan_id,)).fetchone()
+    plan_date = row["plan_date"] if row else date.today().isoformat()
+    db.execute("DELETE FROM daily_plan WHERE id = ?", (plan_id,))
+    db.commit()
+    flash("Removed from daily plan.", "info")
+    return redirect(url_for("daily_plan", date=plan_date))
 
 
 # ── Client-facing pages (no login required) ────────────────────────────────

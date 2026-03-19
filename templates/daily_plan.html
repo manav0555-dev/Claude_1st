@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Daily Plan - Air Excel HVAC Solutions{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Daily Plan</h1>
+    <form method="GET" style="display:flex; align-items:center; gap:8px;">
+        <input type="date" name="date" class="form-control" value="{{ plan_date }}" onchange="this.form.submit()">
+    </form>
+</div>
+
+{% if role == 'admin' %}
+<!-- Admin: Add complaints to plan -->
+<div class="card" style="margin-bottom:24px;">
+    <div class="card-header">Add Complaints to Today's Plan</div>
+    {% if available %}
+    <form method="POST" action="{{ url_for('daily_plan_add') }}">
+        <input type="hidden" name="plan_date" value="{{ plan_date }}">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:40px;"><input type="checkbox" id="selectAll" title="Select all"></th>
+                        <th>Ticket</th>
+                        <th>Title</th>
+                        <th>Site</th>
+                        <th>Customer</th>
+                        <th>Technician</th>
+                        <th>Priority</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in available %}
+                    <tr>
+                        <td><input type="checkbox" name="complaint_ids" value="{{ c['id'] }}"></td>
+                        <td><strong>{{ c['ticket_id'] }}</strong></td>
+                        <td>{{ c['title'] }}</td>
+                        <td>{{ c['site_name'] or '—' }}</td>
+                        <td>{{ c['customer_name'] }}</td>
+                        <td>{{ c['technician_name'] or 'Unassigned' }}</td>
+                        <td>
+                            {% set p = c['priority'] %}
+                            <span class="badge badge-{{ 'danger' if p <= 2 else ('warning' if p == 3 else 'success') }}">
+                                P{{ p }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div style="padding:12px; text-align:right;">
+            <button type="submit" class="btn btn-primary">Add Selected to Plan</button>
+        </div>
+    </form>
+    {% else %}
+    <div style="padding:20px; color:#888;">No unplanned open complaints available.</div>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Planned Sites for the Day -->
+<div class="card">
+    <div class="card-header">
+        {% if role == 'admin' %}
+        Planned Sites &amp; Complaints for {{ plan_date }}
+        {% else %}
+        My Sites for {{ plan_date }}
+        {% endif %}
+    </div>
+    {% if planned %}
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Site</th>
+                    <th>Ticket</th>
+                    <th>Title</th>
+                    <th>Customer</th>
+                    {% if role == 'admin' %}<th>Technician</th>{% endif %}
+                    <th>Priority</th>
+                    <th>Status</th>
+                    {% if role == 'admin' %}<th>Action</th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% set ns = namespace(current_tech='', counter=0) %}
+                {% for c in planned %}
+                {% if role == 'admin' and c['technician_name'] != ns.current_tech %}
+                {% set ns.current_tech = c['technician_name'] or 'Unassigned' %}
+                <tr style="background:var(--bg-light, #f0f4ff);">
+                    <td colspan="{{ 9 }}" style="font-weight:700; padding:10px 12px;">
+                        &#128736; {{ ns.current_tech }}
+                    </td>
+                </tr>
+                {% endif %}
+                {% set ns.counter = ns.counter + 1 %}
+                <tr>
+                    <td>{{ ns.counter }}</td>
+                    <td><strong>{{ c['site_name'] or '—' }}</strong></td>
+                    <td><a href="{{ url_for('view_complaint', complaint_id=c['id']) }}">{{ c['ticket_id'] }}</a></td>
+                    <td>{{ c['title'] }}</td>
+                    <td>{{ c['customer_name'] }}</td>
+                    {% if role == 'admin' %}<td>{{ c['technician_name'] or 'Unassigned' }}</td>{% endif %}
+                    <td>
+                        {% set p = c['priority'] %}
+                        <span class="badge badge-{{ 'danger' if p <= 2 else ('warning' if p == 3 else 'success') }}">
+                            P{{ p }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge badge-{{ 'success' if c['status'] == 'resolved' else ('info' if c['status'] == 'in_progress' else ('secondary' if c['status'] == 'closed' else 'warning')) }}">
+                            {{ c['status']|replace('_', ' ')|title }}
+                        </span>
+                    </td>
+                    {% if role == 'admin' %}
+                    <td>
+                        <form method="POST" action="{{ url_for('daily_plan_remove', plan_id=c['plan_id']) }}" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-danger" title="Remove from plan">&times;</button>
+                        </form>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="padding:20px; color:#888; text-align:center;">
+        {% if role == 'admin' %}
+        No complaints planned for this date. Use the section above to add complaints.
+        {% else %}
+        No sites assigned to you for this date.
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+{% if role == 'admin' %}
+<script>
+document.getElementById('selectAll').addEventListener('change', function() {
+    var boxes = document.querySelectorAll('input[name="complaint_ids"]');
+    for (var i = 0; i < boxes.length; i++) boxes[i].checked = this.checked;
+});
+</script>
+{% endif %}
+{% endblock %}

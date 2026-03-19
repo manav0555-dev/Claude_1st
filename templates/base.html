@@ -32,6 +32,7 @@
         <ul class="sidebar-nav">
             <li><a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}active{% endif %}">&#9632; Dashboard</a></li>
             <li><a href="{{ url_for('complaints_list') }}" class="{% if request.endpoint in ('complaints_list','view_complaint','new_complaint') %}active{% endif %}">&#9993; Complaints</a></li>
+            <li><a href="{{ url_for('daily_plan') }}" class="{% if request.endpoint == 'daily_plan' %}active{% endif %}">&#128197; Daily Plan</a></li>
             {% if session.get('role') == 'admin' %}
             <li><a href="{{ url_for('accountability') }}" class="{% if request.endpoint == 'accountability' %}active{% endif %}">&#9888; Accountability</a></li>
             <li><a href="{{ url_for('manage_sites') }}" class="{% if request.endpoint in ('manage_sites',) %}active{% endif %}">&#9873; Job Sites</a></li>
