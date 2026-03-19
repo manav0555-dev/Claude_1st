@@ -349,6 +349,8 @@ textarea.form-control { min-height: 100px; resize: vertical; }
     justify-content: center;
     min-height: 100vh;
     background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
+    position: relative;
+    z-index: 1;
 }
 
 .login-card {
@@ -358,6 +360,8 @@ textarea.form-control { min-height: 100px; resize: vertical; }
     padding: 40px;
     width: 100%;
     max-width: 400px;
+    position: relative;
+    z-index: 2;
 }
 
 .login-card h1 {
