@@ -14,9 +14,8 @@ Setup:
 import json
 import logging
 import os
-
-import gspread
-from google.oauth2.service_account import Credentials
+import subprocess
+import sys
 
 logger = logging.getLogger(__name__)
 
@@ -27,15 +26,47 @@ HEADERS = [
     "Category", "Created At", "Updated At", "Resolved At"
 ]
 
+# Check gspread availability once at module load using a subprocess
+# (gspread can trigger Rust panics that crash the Python process)
+_gspread_available = None
+
+def _check_gspread():
+    global _gspread_available
+    if _gspread_available is not None:
+        return _gspread_available
+    try:
+        result = subprocess.run(
+            [sys.executable, "-c", "import gspread"],
+            capture_output=True, timeout=10
+        )
+        _gspread_available = result.returncode == 0
+    except Exception:
+        _gspread_available = False
+    return _gspread_available
+
+
+def _get_gspread():
+    """Lazy-import gspread to avoid crashes if dependencies are broken."""
+    if not _check_gspread():
+        return None
+    import gspread
+    return gspread
+
 
 def _get_client():
     """Get an authenticated gspread client using service account credentials."""
+    gspread = _get_gspread()
+    if not gspread:
+        logger.warning("gspread not available – skipping Google Sheets sync")
+        return None
+
     creds_json = os.environ.get("GOOGLE_SHEETS_CREDENTIALS")
     if not creds_json:
         logger.warning("GOOGLE_SHEETS_CREDENTIALS not set – skipping Google Sheets sync")
         return None
 
     try:
+        from google.oauth2.service_account import Credentials
         creds_data = json.loads(creds_json)
         scopes = [
             "https://www.googleapis.com/auth/spreadsheets",
@@ -58,6 +89,8 @@ def _get_worksheet():
     client = _get_client()
     if not client:
         return None
+
+    gspread = _get_gspread()
 
     try:
         spreadsheet = client.open_by_key(sheet_id)
@@ -112,6 +145,7 @@ def sync_complaint(complaint):
         if not worksheet:
             return False
 
+        gspread = _get_gspread()
         ticket_id = complaint.get("ticket_id", "")
         row_data = _complaint_to_row(complaint)
 
@@ -151,7 +185,7 @@ def sync_all_complaints(complaints):
             "horizontalAlignment": "CENTER",
         })
 
-        logger.info("Full sync complete – %d complaints written to Google Sheets", len(complaints) - 0)
+        logger.info("Full sync complete – %d complaints written to Google Sheets", len(complaints))
         return True
     except Exception as e:
         logger.error("Failed to full-sync to Google Sheets: %s", e)
@@ -161,6 +195,7 @@ def sync_all_complaints(complaints):
 def is_configured():
     """Check if Google Sheets integration is configured."""
     return bool(
-        os.environ.get("GOOGLE_SHEETS_CREDENTIALS")
+        _get_gspread()
+        and os.environ.get("GOOGLE_SHEETS_CREDENTIALS")
         and os.environ.get("GOOGLE_SHEET_ID")
     )
