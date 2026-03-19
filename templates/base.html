@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}HVAC Complaint Tracker{% endblock %}</title>
+    <title>{% block title %}Air Excel HVAC Solutions{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
@@ -12,7 +12,7 @@
     <nav class="sidebar">
         <div class="sidebar-brand">
             <span class="icon">&#9881;</span>
-            <span>HVAC Tickets</span>
+            <span>Air Excel HVAC</span>
         </div>
         <ul class="sidebar-nav">
             <li><a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}active{% endif %}">&#9632; Dashboard</a></li>
