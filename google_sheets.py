@@ -15,6 +15,9 @@ import json
 import logging
 import os
 
+import gspread
+from google.oauth2.service_account import Credentials
+
 logger = logging.getLogger(__name__)
 
 # Headers for the complaints sheet
@@ -33,9 +36,6 @@ def _get_client():
         return None
 
     try:
-        import gspread
-        from google.oauth2.service_account import Credentials
-
         creds_data = json.loads(creds_json)
         scopes = [
             "https://www.googleapis.com/auth/spreadsheets",
@@ -112,7 +112,6 @@ def sync_complaint(complaint):
         if not worksheet:
             return False
 
-        import gspread
         ticket_id = complaint.get("ticket_id", "")
         row_data = _complaint_to_row(complaint)
 
