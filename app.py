@@ -10,6 +10,7 @@ from flask import (
     Flask, render_template, request, redirect, url_for,
     session, flash, jsonify, g
 )
+import google_sheets
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", secrets.token_hex(32))
@@ -38,6 +39,17 @@ def generate_ticket_id():
     chars = string.ascii_uppercase + string.digits
     suffix = ''.join(random.choices(chars, k=6))
     return f"HVAC-{suffix}"
+
+
+def get_complaint_for_sheets(db, ticket_id):
+    """Fetch a complaint with joined fields for Google Sheets sync."""
+    return db.execute("""
+        SELECT c.*, u.full_name as technician_name, js.name as site_name
+        FROM complaints c
+        LEFT JOIN users u ON c.technician_id = u.id
+        LEFT JOIN job_sites js ON c.job_site_id = js.id
+        WHERE c.ticket_id = ?
+    """, (ticket_id,)).fetchone()
 
 
 def init_db():
@@ -361,6 +373,10 @@ def new_complaint():
             """, (ticket_id, title, description, customer_name, customer_phone,
                   job_site_id, technician_id, priority, category, session["user_id"]))
             db.commit()
+            # Sync to Google Sheets
+            complaint_row = get_complaint_for_sheets(db, ticket_id)
+            if complaint_row:
+                google_sheets.sync_complaint(dict(complaint_row))
             flash("Complaint created successfully.", "success")
             return redirect(url_for("complaints_list"))
 
@@ -430,6 +446,12 @@ def update_complaint(complaint_id):
     params.append(complaint_id)
     db.execute(f"UPDATE complaints SET {', '.join(updates)} WHERE id = ?", params)
     db.commit()
+    # Sync updated complaint to Google Sheets
+    row = db.execute("SELECT ticket_id FROM complaints WHERE id = ?", (complaint_id,)).fetchone()
+    if row:
+        complaint_row = get_complaint_for_sheets(db, row["ticket_id"])
+        if complaint_row:
+            google_sheets.sync_complaint(dict(complaint_row))
     flash("Complaint updated.", "success")
     return redirect(url_for("view_complaint", complaint_id=complaint_id))
 
@@ -528,6 +550,40 @@ def api_insights():
     })
 
 
+# ── Google Sheets Sync ─────────────────────────────────────────────────────
+
+@app.route("/admin/sync-sheets", methods=["POST"])
+@admin_required
+def sync_sheets():
+    """Full sync of all complaints to Google Sheets."""
+    if not google_sheets.is_configured():
+        flash("Google Sheets is not configured. Set GOOGLE_SHEETS_CREDENTIALS and GOOGLE_SHEET_ID environment variables.", "danger")
+        return redirect(url_for("dashboard"))
+
+    db = get_db()
+    complaints = db.execute("""
+        SELECT c.*, u.full_name as technician_name, js.name as site_name
+        FROM complaints c
+        LEFT JOIN users u ON c.technician_id = u.id
+        LEFT JOIN job_sites js ON c.job_site_id = js.id
+        ORDER BY c.created_at DESC
+    """).fetchall()
+
+    success = google_sheets.sync_all_complaints([dict(c) for c in complaints])
+    if success:
+        flash(f"Successfully synced {len(complaints)} complaints to Google Sheets.", "success")
+    else:
+        flash("Failed to sync to Google Sheets. Check server logs.", "danger")
+    return redirect(url_for("dashboard"))
+
+
+@app.route("/admin/sheets-status")
+@admin_required
+def sheets_status():
+    """Check if Google Sheets integration is configured."""
+    return jsonify({"configured": google_sheets.is_configured()})
+
+
 # ── Client-facing pages (no login required) ────────────────────────────────
 
 @app.route("/client")
@@ -559,6 +615,10 @@ def client_submit():
             """, (ticket_id, title, description, customer_name, customer_phone,
                   customer_email, job_site_id, category))
             db.commit()
+            # Sync to Google Sheets
+            complaint_row = get_complaint_for_sheets(db, ticket_id)
+            if complaint_row:
+                google_sheets.sync_complaint(dict(complaint_row))
             return redirect(url_for("client_success", ticket_id=ticket_id))
 
     job_sites = db.execute("SELECT id, name FROM job_sites ORDER BY name").fetchall()

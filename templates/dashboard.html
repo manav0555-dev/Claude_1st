@@ -4,7 +4,14 @@
 {% block content %}
 <div class="page-header">
     <h1>Dashboard</h1>
-    <a href="{{ url_for('new_complaint') }}" class="btn btn-primary">+ New Complaint</a>
+    <div style="display:flex; gap:0.5rem;">
+        {% if session.get('role') == 'admin' %}
+        <form action="{{ url_for('sync_sheets') }}" method="POST" style="margin:0;">
+            <button type="submit" class="btn btn-primary" style="background:#0f9d58; border-color:#0f9d58;" title="Sync all complaints to Google Sheets">Sync to Google Sheets</button>
+        </form>
+        {% endif %}
+        <a href="{{ url_for('new_complaint') }}" class="btn btn-primary">+ New Complaint</a>
+    </div>
 </div>
 
 <!-- Stats -->
