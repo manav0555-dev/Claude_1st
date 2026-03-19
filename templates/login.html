@@ -4,7 +4,8 @@
 {% block body %}
 <div class="login-page">
     <div class="login-card">
-        <h1>&#9881; Air Excel HVAC</h1>
+        <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="Air Excel HVAC Logo" class="login-logo">
+        <h1>Air Excel HVAC</h1>
         <p class="subtitle">Complaint Tracking System</p>
 
         {% with messages = get_flashed_messages(with_categories=true) %}

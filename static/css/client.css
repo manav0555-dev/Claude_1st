@@ -29,9 +29,18 @@
     font-size: 1.2rem;
     font-weight: 700;
     color: var(--dark);
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .client-logo:hover { text-decoration: none; color: var(--primary); }
+
+.client-header-logo {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+}
 
 .client-nav { display: flex; gap: 24px; }
 
@@ -71,6 +80,14 @@
     border-radius: var(--radius);
     color: var(--white);
     margin-bottom: 40px;
+}
+
+.hero-logo {
+    width: 90px;
+    height: 90px;
+    margin-bottom: 16px;
+    filter: brightness(0) invert(1);
+    opacity: .9;
 }
 
 .client-hero h1 {
