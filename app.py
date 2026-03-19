@@ -539,7 +539,9 @@ def new_complaint():
             # Sync to Google Sheets
             complaint_row = get_complaint_for_sheets(db, ticket_id)
             if complaint_row:
-                google_sheets.sync_complaint(dict(complaint_row))
+                if not google_sheets.sync_complaint(dict(complaint_row)):
+                    if google_sheets.is_configured():
+                        flash("Complaint created but Google Sheets sync failed. Use manual sync.", "warning")
             flash("Complaint created successfully.", "success")
             return redirect(url_for("complaints_list"))
 
@@ -634,7 +636,9 @@ def update_complaint(complaint_id):
     if row:
         complaint_row = get_complaint_for_sheets(db, row["ticket_id"])
         if complaint_row:
-            google_sheets.sync_complaint(dict(complaint_row))
+            if not google_sheets.sync_complaint(dict(complaint_row)):
+                if google_sheets.is_configured():
+                    flash("Complaint updated but Google Sheets sync failed. Use manual sync.", "warning")
     flash("Complaint updated.", "success")
     return redirect(url_for("view_complaint", complaint_id=complaint_id))
 
@@ -971,6 +975,7 @@ def client_submit():
             if complaint_row:
                 google_sheets.sync_complaint(dict(complaint_row))
             return redirect(url_for("client_success", ticket_id=ticket_id))
+
 
     job_sites = db.execute("SELECT id, name, site_type FROM job_sites ORDER BY site_type, name").fetchall()
     return render_template("client_submit.html", job_sites=job_sites)

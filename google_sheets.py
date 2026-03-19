@@ -34,12 +34,13 @@ def _check_gspread():
     global _gspread_available
     if _gspread_available is not None:
         return _gspread_available
+    # Subprocess check first (avoids Rust panics that crash the process in some envs)
     try:
         result = subprocess.run(
-            [sys.executable, "-c", "import gspread"],
+            [sys.executable, "-c", "import gspread; print('ok')"],
             capture_output=True, timeout=10
         )
-        _gspread_available = result.returncode == 0
+        _gspread_available = result.returncode == 0 and b'ok' in result.stdout
     except Exception:
         _gspread_available = False
     return _gspread_available
@@ -139,31 +140,36 @@ def _complaint_to_row(complaint):
 
 
 def sync_complaint(complaint):
-    """Add or update a single complaint row in Google Sheets."""
-    try:
-        worksheet = _get_worksheet()
-        if not worksheet:
-            return False
-
-        gspread = _get_gspread()
-        ticket_id = complaint.get("ticket_id", "")
-        row_data = _complaint_to_row(complaint)
-
-        # Search for existing row by ticket_id
+    """Add or update a single complaint row in Google Sheets (with retry)."""
+    import time
+    max_retries = 2
+    for attempt in range(max_retries + 1):
         try:
-            cell = worksheet.find(ticket_id, in_column=1)
-            # Update existing row
-            worksheet.update(f"A{cell.row}:N{cell.row}", [row_data])
-            logger.info("Updated ticket %s in Google Sheets (row %d)", ticket_id, cell.row)
-        except gspread.exceptions.CellNotFound:
-            # Append new row
-            worksheet.append_row(row_data, value_input_option="USER_ENTERED")
-            logger.info("Added ticket %s to Google Sheets", ticket_id)
+            worksheet = _get_worksheet()
+            if not worksheet:
+                return False
 
-        return True
-    except Exception as e:
-        logger.error("Failed to sync complaint to Google Sheets: %s", e)
-        return False
+            gspread = _get_gspread()
+            ticket_id = complaint.get("ticket_id", "")
+            row_data = _complaint_to_row(complaint)
+
+            # Search for existing row by ticket_id
+            try:
+                cell = worksheet.find(ticket_id, in_column=1)
+                # Update existing row
+                worksheet.update(f"A{cell.row}:N{cell.row}", [row_data])
+                logger.info("Updated ticket %s in Google Sheets (row %d)", ticket_id, cell.row)
+            except gspread.exceptions.CellNotFound:
+                # Append new row
+                worksheet.append_row(row_data, value_input_option="USER_ENTERED")
+                logger.info("Added ticket %s to Google Sheets", ticket_id)
+
+            return True
+        except Exception as e:
+            logger.error("Google Sheets sync attempt %d/%d failed: %s", attempt + 1, max_retries + 1, e)
+            if attempt < max_retries:
+                time.sleep(1)
+    return False
 
 
 def sync_all_complaints(complaints):
@@ -195,7 +201,7 @@ def sync_all_complaints(complaints):
 def is_configured():
     """Check if Google Sheets integration is configured."""
     return bool(
-        _get_gspread()
-        and os.environ.get("GOOGLE_SHEETS_CREDENTIALS")
+        os.environ.get("GOOGLE_SHEETS_CREDENTIALS")
         and os.environ.get("GOOGLE_SHEET_ID")
+        and _check_gspread()
     )
