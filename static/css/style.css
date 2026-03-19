@@ -570,16 +570,23 @@ textarea.form-control { min-height: 100px; resize: vertical; }
 
 /* ── Responsive: Mobile (768px) ─────────────────────────────────────── */
 @media (max-width: 768px) {
-    /* Show mobile topbar, hide desktop sidebar */
-    .mobile-topbar { display: flex; }
+    /* Switch layout to column so topbar stacks above content */
+    .app-layout { flex-direction: column; }
+
+    /* Show mobile topbar full-width */
+    .mobile-topbar { display: flex; width: 100%; }
+
+    /* Sidebar: slide-in drawer on mobile */
     .sidebar {
-        display: block;
         transform: translateX(-100%);
         transition: transform .25s ease;
+        z-index: 300;
     }
     .sidebar.open { transform: translateX(0); }
     .sidebar-close { display: block; }
-    .main-content { margin-left: 0; padding: 16px; }
+    .sidebar-overlay { z-index: 250; }
+
+    .main-content { margin-left: 0; padding: 16px; max-width: 100%; }
 
     /* Page header stacks */
     .page-header { flex-direction: column; align-items: flex-start; gap: 12px; }
