@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Technician Accountability - Air Excel HVAC Solutions{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Technician Accountability Report</h1>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+</div>
+
+<!-- Technician Summary -->
+<div class="card">
+    <div class="card-header">Technician Overview</div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Technician</th>
+                    <th>Total Complaints</th>
+                    <th>Active</th>
+                    <th>Repeat Clients</th>
+                    <th>Repeat Complaints</th>
+                    <th>Repeat Rate</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in tech_summary %}
+                <tr{% if t['repeat_clients'] and t['repeat_clients'] > 0 %} class="repeat-row"{% endif %}>
+                    <td><strong>{{ t['full_name'] }}</strong></td>
+                    <td>{{ t['total_complaints'] or 0 }}</td>
+                    <td>{% if t['active_complaints'] and t['active_complaints'] > 0 %}<span style="color:var(--danger); font-weight:600;">{{ t['active_complaints'] }}</span>{% else %}0{% endif %}</td>
+                    <td>
+                        {% if t['repeat_clients'] and t['repeat_clients'] > 0 %}
+                        <span class="badge badge-repeat">{{ t['repeat_clients'] }} client{{ 's' if t['repeat_clients'] != 1 else '' }}</span>
+                        {% else %}
+                        0
+                        {% endif %}
+                    </td>
+                    <td>{{ t['repeat_complaint_count'] or 0 }}</td>
+                    <td>
+                        {% if t['total_complaints'] and t['total_complaints'] > 0 and t['repeat_complaint_count'] and t['repeat_complaint_count'] > 0 %}
+                        <span style="font-weight:600; color:{% if (t['repeat_complaint_count'] / t['total_complaints'] * 100) > 50 %}var(--danger){% elif (t['repeat_complaint_count'] / t['total_complaints'] * 100) > 25 %}var(--warning, #e37400){% else %}var(--gray-700){% endif %};">
+                            {{ (t['repeat_complaint_count'] / t['total_complaints'] * 100)|round(0)|int }}%
+                        </span>
+                        {% else %}
+                        0%
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Repeat Complaint Pairs -->
+{% if repeat_pairs %}
+<div class="card repeat-alerts-card">
+    <div class="card-header">Flagged: Repeat Complaints (Same Client + Same Technician)</div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Client</th>
+                    <th>Technician</th>
+                    <th>Complaints</th>
+                    <th>Still Active</th>
+                    <th>Categories</th>
+                    <th>First Complaint</th>
+                    <th>Latest Complaint</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in repeat_pairs %}
+                <tr class="repeat-row">
+                    <td><strong>{{ r['customer_name'] }}</strong></td>
+                    <td>{{ r['technician_name'] }}</td>
+                    <td><span class="badge badge-repeat">{{ r['complaint_count'] }}x</span></td>
+                    <td>{% if r['active_count'] > 0 %}<span style="color:var(--danger); font-weight:600;">{{ r['active_count'] }}</span>{% else %}0{% endif %}</td>
+                    <td>{{ r['categories'] or '—' }}</td>
+                    <td>{{ r['first_complaint'][:10] }}</td>
+                    <td>{{ r['latest_complaint'][:10] }}</td>
+                    <td><a href="{{ url_for('complaints_list', search=r['customer_name'], technician=r['technician_id']) }}" class="btn btn-sm btn-secondary">View All</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <p style="color:var(--gray-500); text-align:center; padding:24px;">No repeat complaint patterns detected. This is good!</p>
+</div>
+{% endif %}
+{% endblock %}

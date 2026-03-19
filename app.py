@@ -354,6 +354,19 @@ def dashboard():
         LIMIT 10
     """).fetchall()
 
+    # Repeat complaint alerts: same client complaining about same technician
+    repeat_alerts = db.execute("""
+        SELECT c.customer_name, u.full_name as technician_name, c.technician_id,
+               COUNT(*) as complaint_count,
+               SUM(CASE WHEN c.status IN ('open', 'in_progress') THEN 1 ELSE 0 END) as active_count,
+               MAX(c.created_at) as latest_complaint
+        FROM complaints c
+        JOIN users u ON c.technician_id = u.id
+        GROUP BY LOWER(c.customer_name), c.technician_id
+        HAVING COUNT(*) > 1
+        ORDER BY complaint_count DESC, latest_complaint DESC
+    """).fetchall()
+
     # Category breakdown
     category_data = db.execute("""
         SELECT COALESCE(category, 'Uncategorized') as cat, COUNT(*) as cnt
@@ -384,6 +397,7 @@ def dashboard():
         total=total, open_count=open_count, in_progress=in_progress,
         resolved=resolved, priority_data=priority_data,
         repeat_technicians=repeat_technicians, repeat_customers=repeat_customers,
+        repeat_alerts=repeat_alerts,
         category_data=category_data, recent=recent, site_data=site_data)
 
 
@@ -397,6 +411,17 @@ def complaints_list():
     status_filter = request.args.get("status", "")
     tech_filter = request.args.get("technician", "")
     search = request.args.get("search", "").strip()
+
+    # Build a set of (customer_name, technician_id) pairs that have repeat complaints
+    repeat_pairs = db.execute("""
+        SELECT LOWER(customer_name) as cname, technician_id, COUNT(*) as cnt
+        FROM complaints
+        WHERE technician_id IS NOT NULL
+        GROUP BY LOWER(customer_name), technician_id
+        HAVING COUNT(*) > 1
+    """).fetchall()
+    repeat_set = {(r['cname'], r['technician_id']) for r in repeat_pairs}
+    repeat_counts = {(r['cname'], r['technician_id']): r['cnt'] for r in repeat_pairs}
 
     query = """
         SELECT c.*, u.full_name as technician_name, js.name as site_name,
@@ -444,7 +469,8 @@ def complaints_list():
 
     return render_template("complaints.html", complaints=complaints,
         technicians=technicians, sort=sort, status_filter=status_filter,
-        tech_filter=tech_filter, search=search)
+        tech_filter=tech_filter, search=search,
+        repeat_set=repeat_set, repeat_counts=repeat_counts)
 
 
 @app.route("/complaints/new", methods=["GET", "POST"])
@@ -524,8 +550,21 @@ def view_complaint(complaint_id):
     technicians = db.execute("SELECT id, full_name FROM users WHERE role='technician' ORDER BY full_name").fetchall()
     job_sites = db.execute("SELECT id, name, site_type FROM job_sites ORDER BY site_type, name").fetchall()
 
+    # Check for repeat complaints: same customer + same technician
+    repeat_history = []
+    if complaint['technician_id']:
+        repeat_history = db.execute("""
+            SELECT c.id, c.ticket_id, c.title, c.category, c.status, c.created_at
+            FROM complaints c
+            WHERE LOWER(c.customer_name) = LOWER(?)
+              AND c.technician_id = ?
+              AND c.id != ?
+            ORDER BY c.created_at DESC
+        """, (complaint['customer_name'], complaint['technician_id'], complaint_id)).fetchall()
+
     return render_template("view_complaint.html", complaint=complaint,
-        notes=notes, technicians=technicians, job_sites=job_sites)
+        notes=notes, technicians=technicians, job_sites=job_sites,
+        repeat_history=repeat_history)
 
 
 @app.route("/complaints/<int:complaint_id>/update", methods=["POST"])
@@ -582,6 +621,58 @@ def add_note(complaint_id):
         db.commit()
         flash("Note added.", "success")
     return redirect(url_for("view_complaint", complaint_id=complaint_id))
+
+
+# ── Technician Accountability ────────────────────────────────────────────
+
+@app.route("/accountability")
+@admin_required
+def accountability():
+    db = get_db()
+
+    # All repeat complaint pairs: same client + same technician
+    repeat_pairs = db.execute("""
+        SELECT c.customer_name, u.full_name as technician_name, u.id as technician_id,
+               COUNT(*) as complaint_count,
+               SUM(CASE WHEN c.status IN ('open', 'in_progress') THEN 1 ELSE 0 END) as active_count,
+               MIN(c.created_at) as first_complaint,
+               MAX(c.created_at) as latest_complaint,
+               GROUP_CONCAT(DISTINCT c.category) as categories
+        FROM complaints c
+        JOIN users u ON c.technician_id = u.id
+        GROUP BY LOWER(c.customer_name), c.technician_id
+        HAVING COUNT(*) > 1
+        ORDER BY complaint_count DESC, latest_complaint DESC
+    """).fetchall()
+
+    # Technician summary: total complaints, repeat complaint count, unique repeat clients
+    tech_summary = db.execute("""
+        SELECT u.id, u.full_name,
+               COUNT(c.id) as total_complaints,
+               SUM(CASE WHEN c.status IN ('open', 'in_progress') THEN 1 ELSE 0 END) as active_complaints,
+               (SELECT COUNT(*) FROM (
+                   SELECT LOWER(c2.customer_name)
+                   FROM complaints c2
+                   WHERE c2.technician_id = u.id
+                   GROUP BY LOWER(c2.customer_name)
+                   HAVING COUNT(*) > 1
+               )) as repeat_clients,
+               (SELECT SUM(sub.cnt) FROM (
+                   SELECT COUNT(*) as cnt
+                   FROM complaints c3
+                   WHERE c3.technician_id = u.id
+                   GROUP BY LOWER(c3.customer_name)
+                   HAVING COUNT(*) > 1
+               ) sub) as repeat_complaint_count
+        FROM users u
+        LEFT JOIN complaints c ON c.technician_id = u.id
+        WHERE u.role = 'technician'
+        GROUP BY u.id
+        ORDER BY repeat_clients DESC, total_complaints DESC
+    """).fetchall()
+
+    return render_template("accountability.html",
+        repeat_pairs=repeat_pairs, tech_summary=tech_summary)
 
 
 # ── Job Sites ───────────────────────────────────────────────────────────────

@@ -49,10 +49,16 @@
             </thead>
             <tbody>
                 {% for c in complaints %}
-                <tr>
+                {% set is_repeat = (c['customer_name']|lower, c['technician_id']) in repeat_set if c['technician_id'] else false %}
+                <tr{% if is_repeat %} class="repeat-row"{% endif %}>
                     <td><a href="{{ url_for('view_complaint', complaint_id=c['id']) }}">{{ c['ticket_id'] or '#' ~ c['id'] }}</a></td>
                     <td><span class="priority-badge priority-{{ c['priority'] }}">{{ c['priority'] }}</span></td>
-                    <td><a href="{{ url_for('view_complaint', complaint_id=c['id']) }}">{{ c['title'] }}</a></td>
+                    <td>
+                        <a href="{{ url_for('view_complaint', complaint_id=c['id']) }}">{{ c['title'] }}</a>
+                        {% if is_repeat %}
+                        <span class="badge badge-repeat" title="Repeat complaint: {{ repeat_counts.get((c['customer_name']|lower, c['technician_id']), 0) }} complaints from this client against this technician">REPEAT x{{ repeat_counts.get((c['customer_name']|lower, c['technician_id']), 0) }}</span>
+                        {% endif %}
+                    </td>
                     <td>{{ c['customer_name'] }}</td>
                     <td>{{ c['technician_name'] or '—' }}</td>
                     <td>{{ c['site_name'] or '—' }}</td>

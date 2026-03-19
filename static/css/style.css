@@ -436,6 +436,46 @@ textarea.form-control { min-height: 100px; resize: vertical; }
 
 .page-header h1 { font-size: 1.5rem; }
 
+/* ── Repeat complaint flags ──────────────────────────────────────────── */
+.badge-repeat {
+    background: #fce8e6;
+    color: var(--danger);
+    border: 1px solid var(--danger);
+    font-weight: 700;
+    font-size: .7rem;
+    animation: pulse-repeat 2s ease-in-out infinite;
+}
+
+@keyframes pulse-repeat {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .7; }
+}
+
+.repeat-row {
+    background: #fff5f5 !important;
+    border-left: 3px solid var(--danger);
+}
+
+.repeat-row:hover { background: #ffe8e8 !important; }
+
+.repeat-alert {
+    border-left: 4px solid var(--danger);
+    background: #fce8e6;
+}
+
+.repeat-alert .repeat-history-mini {
+    margin-top: 8px;
+    font-size: .85rem;
+}
+
+.repeat-alerts-card {
+    border: 1px solid #f5c6cb;
+}
+
+.repeat-alerts-card .card-header {
+    color: var(--danger);
+}
+
 /* ── Responsive ──────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
     .sidebar { display: none; }

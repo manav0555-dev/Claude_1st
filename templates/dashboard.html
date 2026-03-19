@@ -119,6 +119,34 @@
     </div>
 </div>
 
+<!-- Repeat Complaint Alerts: Client vs Technician -->
+{% if repeat_alerts %}
+<div class="card repeat-alerts-card">
+    <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <span>Repeat Complaint Alerts (Client vs Technician)</span>
+        {% if session.get('role') == 'admin' %}
+        <a href="{{ url_for('accountability') }}" class="btn btn-sm btn-danger">View Full Report</a>
+        {% endif %}
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Client</th><th>Technician</th><th>Complaints</th><th>Still Active</th><th>Latest</th></tr></thead>
+            <tbody>
+                {% for row in repeat_alerts %}
+                <tr class="repeat-row">
+                    <td>{{ row['customer_name'] }}</td>
+                    <td>{{ row['technician_name'] }}</td>
+                    <td><span class="badge badge-repeat">{{ row['complaint_count'] }}x</span></td>
+                    <td>{% if row['active_count'] > 0 %}<span style="color:var(--danger); font-weight:600;">{{ row['active_count'] }}</span>{% else %}0{% endif %}</td>
+                    <td>{{ row['latest_complaint'][:10] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
 <!-- Repeat Customers -->
 {% if repeat_customers %}
 <div class="card">

@@ -7,6 +7,20 @@
     <a href="{{ url_for('complaints_list') }}" class="btn btn-secondary">Back to List</a>
 </div>
 
+{% if repeat_history %}
+<div class="alert alert-danger repeat-alert">
+    <strong>Repeat Complaint Flag:</strong> This client (<strong>{{ complaint['customer_name'] }}</strong>) has filed <strong>{{ repeat_history|length + 1 }}</strong> complaints against technician <strong>{{ complaint['technician_name'] }}</strong>. This pattern may require management attention.
+    <div class="repeat-history-mini">
+        <strong>Previous complaints:</strong>
+        <ul style="margin:6px 0 0 16px;">
+            {% for r in repeat_history %}
+            <li><a href="{{ url_for('view_complaint', complaint_id=r['id']) }}">{{ r['ticket_id'] }}</a> — {{ r['category'] or r['title'] }} ({{ r['status']|replace('_',' ') }}, {{ r['created_at'][:10] }})</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}
+
 <div class="detail-grid">
     <!-- Left: Details -->
     <div>
