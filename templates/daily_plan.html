@@ -137,6 +137,72 @@
     {% endif %}
 </div>
 
+<!-- Resolved / Closed Complaints for the Day -->
+{% if resolved %}
+<div class="card" style="margin-top:24px;">
+    <div class="card-header" style="background:var(--bg-light, #f0f4ff);">
+        &#10003; Resolved / Closed — {{ plan_date }}
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Site</th>
+                    <th>Ticket</th>
+                    <th>Title</th>
+                    <th>Customer</th>
+                    {% if role == 'admin' %}<th>Technician</th>{% endif %}
+                    <th>Priority</th>
+                    <th>Status</th>
+                    {% if role == 'admin' %}<th>Action</th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% set ns2 = namespace(current_tech='', counter=0) %}
+                {% for c in resolved %}
+                {% if role == 'admin' and c['technician_name'] != ns2.current_tech %}
+                {% set ns2.current_tech = c['technician_name'] or 'Unassigned' %}
+                <tr style="background:var(--bg-light, #f0f4ff);">
+                    <td colspan="{{ 9 }}" style="font-weight:700; padding:10px 12px;">
+                        &#128736; {{ ns2.current_tech }}
+                    </td>
+                </tr>
+                {% endif %}
+                {% set ns2.counter = ns2.counter + 1 %}
+                <tr style="opacity:0.75;">
+                    <td>{{ ns2.counter }}</td>
+                    <td><strong>{{ c['site_name'] or '—' }}</strong></td>
+                    <td><a href="{{ url_for('view_complaint', complaint_id=c['id']) }}">{{ c['ticket_id'] }}</a></td>
+                    <td>{{ c['title'] }}</td>
+                    <td>{{ c['customer_name'] }}</td>
+                    {% if role == 'admin' %}<td>{{ c['technician_name'] or 'Unassigned' }}</td>{% endif %}
+                    <td>
+                        {% set p = c['priority'] %}
+                        <span class="badge badge-{{ 'danger' if p <= 2 else ('warning' if p == 3 else 'success') }}">
+                            P{{ p }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge badge-{{ 'success' if c['status'] == 'resolved' else 'secondary' }}">
+                            {{ c['status']|replace('_', ' ')|title }}
+                        </span>
+                    </td>
+                    {% if role == 'admin' %}
+                    <td>
+                        <form method="POST" action="{{ url_for('daily_plan_remove', plan_id=c['plan_id']) }}" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-danger" title="Remove from plan">&times;</button>
+                        </form>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
 {% if role == 'admin' %}
 <script>
 document.getElementById('selectAll').addEventListener('change', function() {

@@ -858,7 +858,7 @@ def daily_plan():
 
     # Get planned complaints for this date
     if role == "admin":
-        planned = db.execute("""
+        all_planned = db.execute("""
             SELECT c.*, js.name as site_name, u.full_name as technician_name,
                    dp.id as plan_id
             FROM daily_plan dp
@@ -886,7 +886,7 @@ def daily_plan():
         ).fetchall()
     else:
         # Technician: only their planned complaints
-        planned = db.execute("""
+        all_planned = db.execute("""
             SELECT c.*, js.name as site_name, u.full_name as technician_name,
                    dp.id as plan_id
             FROM daily_plan dp
@@ -899,9 +899,13 @@ def daily_plan():
         available = []
         technicians = []
 
+    # Split into active and resolved/closed
+    planned = [c for c in all_planned if c['status'] not in ('resolved', 'closed')]
+    resolved = [c for c in all_planned if c['status'] in ('resolved', 'closed')]
+
     return render_template("daily_plan.html",
-        planned=planned, available=available, technicians=technicians,
-        plan_date=plan_date, role=role)
+        planned=planned, resolved=resolved, available=available,
+        technicians=technicians, plan_date=plan_date, role=role)
 
 
 @app.route("/daily-plan/add", methods=["POST"])
