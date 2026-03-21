@@ -77,7 +77,8 @@ def init_db():
         db.execute("ALTER TABLE job_sites ADD COLUMN site_type TEXT NOT NULL DEFAULT 'AMC'")
     # Migrate: add client_code column to job_sites if missing
     if "client_code" not in site_cols:
-        db.execute("ALTER TABLE job_sites ADD COLUMN client_code TEXT UNIQUE")
+        db.execute("ALTER TABLE job_sites ADD COLUMN client_code TEXT")
+        db.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_client_code ON job_sites(client_code)")
         # Back-fill client codes for existing sites
         sites = db.execute("SELECT id FROM job_sites WHERE client_code IS NULL").fetchall()
         for site in sites:
