@@ -9,6 +9,7 @@
     <div class="client-hero-actions">
         <a href="{{ url_for('client_submit') }}" class="btn btn-primary btn-lg">Lodge a Complaint</a>
         <a href="{{ url_for('client_track') }}" class="btn btn-secondary btn-lg">Track My Complaint</a>
+        <a href="{{ url_for('client_portal') }}" class="btn btn-secondary btn-lg">Client Portal</a>
     </div>
 </div>
 
@@ -27,6 +28,11 @@
         <div class="client-info-icon">&#9874;</div>
         <h3>Technician Assigned</h3>
         <p>Our team reviews and assigns a qualified technician to resolve your issue.</p>
+    </div>
+    <div class="client-info-card">
+        <div class="client-info-icon">&#128273;</div>
+        <h3>Client Portal</h3>
+        <p>Use your unique client code to view all your site details and complaint history.</p>
     </div>
 </div>
 {% endblock %}

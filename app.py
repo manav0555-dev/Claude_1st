@@ -41,6 +41,13 @@ def generate_ticket_id():
     return f"HVAC-{suffix}"
 
 
+def generate_client_code():
+    """Generate a unique client code like AEH-XXXX."""
+    chars = string.ascii_uppercase + string.digits
+    suffix = ''.join(random.choices(chars, k=4))
+    return f"AEH-{suffix}"
+
+
 def get_complaint_for_sheets(db, ticket_id):
     """Fetch a complaint with joined fields for Google Sheets sync."""
     return db.execute("""
@@ -68,6 +75,16 @@ def init_db():
     site_cols = [r[1] for r in db.execute("PRAGMA table_info(job_sites)").fetchall()]
     if "site_type" not in site_cols:
         db.execute("ALTER TABLE job_sites ADD COLUMN site_type TEXT NOT NULL DEFAULT 'AMC'")
+    # Migrate: add client_code column to job_sites if missing
+    if "client_code" not in site_cols:
+        db.execute("ALTER TABLE job_sites ADD COLUMN client_code TEXT UNIQUE")
+        # Back-fill client codes for existing sites
+        sites = db.execute("SELECT id FROM job_sites WHERE client_code IS NULL").fetchall()
+        for site in sites:
+            code = generate_client_code()
+            db.execute("UPDATE job_sites SET client_code = ? WHERE id = ?", (code, site[0]))
+        if sites:
+            db.commit()
     # Back-fill ticket IDs for any existing complaints without one
     rows = db.execute("SELECT id FROM complaints WHERE ticket_id IS NULL").fetchall()
     for row in rows:
@@ -516,7 +533,7 @@ def new_complaint():
         job_site_id = request.form.get("job_site_id") or None
         other_site_name = request.form.get("other_site_name", "").strip()
         if job_site_id == "other" and other_site_name:
-            cursor = db.execute("INSERT INTO job_sites (name, site_type) VALUES (?,?)", (other_site_name, "Other"))
+            cursor = db.execute("INSERT INTO job_sites (name, site_type, client_code) VALUES (?,?,?)", (other_site_name, "Other", generate_client_code()))
             job_site_id = cursor.lastrowid
         elif job_site_id == "other":
             job_site_id = None
@@ -739,9 +756,10 @@ def add_site():
     if name:
         db = get_db()
         try:
-            db.execute("INSERT INTO job_sites (name, address, site_type) VALUES (?,?,?)", (name, address, site_type))
+            client_code = generate_client_code()
+            db.execute("INSERT INTO job_sites (name, address, site_type, client_code) VALUES (?,?,?,?)", (name, address, site_type, client_code))
             db.commit()
-            flash(f"Site '{name}' added.", "success")
+            flash(f"Site '{name}' added. Client Code: {client_code}", "success")
         except sqlite3.IntegrityError:
             flash("Site name already exists.", "danger")
     return redirect(url_for("manage_sites"))
@@ -954,7 +972,7 @@ def client_submit():
         job_site_id = request.form.get("job_site_id") or None
         other_site_name = request.form.get("other_site_name", "").strip()
         if job_site_id == "other" and other_site_name:
-            cursor = db.execute("INSERT INTO job_sites (name, site_type) VALUES (?,?)", (other_site_name, "Other"))
+            cursor = db.execute("INSERT INTO job_sites (name, site_type, client_code) VALUES (?,?,?)", (other_site_name, "Other", generate_client_code()))
             job_site_id = cursor.lastrowid
         elif job_site_id == "other":
             job_site_id = None
@@ -1009,6 +1027,30 @@ def client_track():
                 WHERE c.ticket_id = ?
             """, (ticket_id,)).fetchone()
     return render_template("client_track.html", complaint=complaint, searched=searched)
+
+
+@app.route("/client/portal", methods=["GET", "POST"])
+def client_portal():
+    site = None
+    complaints = []
+    searched = False
+    if request.method == "POST" or request.args.get("code"):
+        searched = True
+        code = (request.form.get("client_code") or request.args.get("code", "")).strip().upper()
+        if code:
+            db = get_db()
+            site = db.execute("SELECT * FROM job_sites WHERE client_code = ?", (code,)).fetchone()
+            if site:
+                complaints = db.execute("""
+                    SELECT c.ticket_id, c.title, c.category, c.status, c.priority,
+                           c.customer_name, c.created_at, c.updated_at,
+                           u.full_name as technician_name
+                    FROM complaints c
+                    LEFT JOIN users u ON c.technician_id = u.id
+                    WHERE c.job_site_id = ?
+                    ORDER BY c.created_at DESC
+                """, (site['id'],)).fetchall()
+    return render_template("client_portal.html", site=site, complaints=complaints, searched=searched)
 
 
 # ── Init DB on import (needed for gunicorn) ─────────────────────────────────

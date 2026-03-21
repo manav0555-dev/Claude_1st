@@ -130,7 +130,7 @@
 /* ── Info cards ──────────────────────────────────────────────────────── */
 .client-info-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 24px;
     margin-bottom: 40px;
 }
@@ -344,6 +344,7 @@
     .client-info-grid { grid-template-columns: 1fr; gap: 16px; margin-bottom: 28px; }
     .client-info-card { padding: 20px 16px; }
     .track-search-row { flex-direction: column; }
+    .portal-summary { grid-template-columns: repeat(3, 1fr) !important; gap: 12px !important; }
     .track-detail-row { flex-direction: column; gap: 4px; }
     .track-label { width: auto; }
     .client-success-actions { flex-direction: column; }

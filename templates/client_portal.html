@@ -1,0 +1,114 @@
+{% extends "client_base.html" %}
+{% block title %}Client Portal - Air Excel HVAC Solutions{% endblock %}
+
+{% block content %}
+<div class="client-form-page">
+    <h1>Client Portal</h1>
+    <p class="client-form-subtitle">Enter your unique client code to view your site details and complaint history.</p>
+
+    <div class="card">
+        <form method="POST">
+            <div class="track-search-row">
+                <input type="text" name="client_code" class="form-control" placeholder="Enter client code (e.g. AEH-X7K2)" required
+                    value="{{ request.form.get('client_code', request.args.get('code', '')) }}" style="text-transform:uppercase;">
+                <button type="submit" class="btn btn-primary">View Details</button>
+            </div>
+        </form>
+    </div>
+
+    {% if searched and site %}
+    <!-- Site Details Card -->
+    <div class="card" style="margin-top:20px;">
+        <div class="card-header">Site Details</div>
+        <div class="track-details" style="padding:20px;">
+            <div class="track-detail-row">
+                <span class="track-label">Site Name</span>
+                <span class="track-value" style="font-weight:600;">{{ site['name'] }}</span>
+            </div>
+            <div class="track-detail-row">
+                <span class="track-label">Client Code</span>
+                <span class="track-value"><code style="background:var(--gray-100); padding:4px 10px; border-radius:4px; font-weight:600; color:var(--primary);">{{ site['client_code'] }}</code></span>
+            </div>
+            <div class="track-detail-row">
+                <span class="track-label">Type</span>
+                <span class="track-value">{{ site['site_type'] }}</span>
+            </div>
+            {% if site['address'] %}
+            <div class="track-detail-row">
+                <span class="track-label">Address</span>
+                <span class="track-value">{{ site['address'] }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Complaint Summary -->
+    {% set open_count = complaints | selectattr('status', 'equalto', 'open') | list | length %}
+    {% set ip_count = complaints | selectattr('status', 'equalto', 'in_progress') | list | length %}
+    {% set resolved_count = (complaints | selectattr('status', 'equalto', 'resolved') | list | length) + (complaints | selectattr('status', 'equalto', 'closed') | list | length) %}
+    <div class="portal-summary" style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:20px;">
+        <div class="card" style="text-align:center; padding:20px;">
+            <div style="font-size:2rem; font-weight:700; color:var(--danger);">{{ open_count }}</div>
+            <div style="font-size:.85rem; color:var(--gray-700);">Open</div>
+        </div>
+        <div class="card" style="text-align:center; padding:20px;">
+            <div style="font-size:2rem; font-weight:700; color:#e37400;">{{ ip_count }}</div>
+            <div style="font-size:.85rem; color:var(--gray-700);">In Progress</div>
+        </div>
+        <div class="card" style="text-align:center; padding:20px;">
+            <div style="font-size:2rem; font-weight:700; color:var(--success);">{{ resolved_count }}</div>
+            <div style="font-size:.85rem; color:var(--gray-700);">Resolved / Closed</div>
+        </div>
+    </div>
+
+    <!-- Complaints Table -->
+    <div class="card" style="margin-top:20px;">
+        <div class="card-header">Complaint History ({{ complaints | length }})</div>
+        {% if complaints %}
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Ticket</th>
+                        <th>Category</th>
+                        <th>Customer</th>
+                        <th>Technician</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>Submitted</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in complaints %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td><a href="{{ url_for('client_track') }}?ticket_id={{ c['ticket_id'] }}" style="font-weight:600;">{{ c['ticket_id'] }}</a></td>
+                        <td>{{ c['category'] or 'General' }}</td>
+                        <td>{{ c['customer_name'] }}</td>
+                        <td>{{ c['technician_name'] or '—' }}</td>
+                        <td>P{{ c['priority'] }}</td>
+                        <td>
+                            <span class="badge badge-{{ 'danger' if c['status'] == 'open' else ('warning' if c['status'] == 'in_progress' else 'success') }}">
+                                {{ c['status'] | upper | replace('_', ' ') }}
+                            </span>
+                        </td>
+                        <td>{{ c['created_at'][:10] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p style="text-align:center; padding:24px; color:var(--gray-500);">No complaints found for this site.</p>
+        {% endif %}
+    </div>
+
+    {% elif searched %}
+    <div class="card track-not-found" style="margin-top:20px;">
+        <h3>Client Not Found</h3>
+        <p>We couldn't find a site with that client code. Please double-check and try again.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
