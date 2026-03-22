@@ -80,13 +80,6 @@ def init_db():
     if "site_code" not in site_cols:
         db.execute("ALTER TABLE job_sites ADD COLUMN site_code TEXT")
         db.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_site_code ON job_sites(site_code)")
-    # Back-fill site codes for any sites missing one
-    sites = db.execute("SELECT id FROM job_sites WHERE site_code IS NULL").fetchall()
-    for site in sites:
-        code = generate_site_code()
-        db.execute("UPDATE job_sites SET site_code = ? WHERE id = ?", (code, site[0]))
-    if sites:
-        db.commit()
     # Back-fill ticket IDs for any existing complaints without one
     rows = db.execute("SELECT id FROM complaints WHERE ticket_id IS NULL").fetchall()
     for row in rows:
@@ -185,14 +178,22 @@ def init_db():
         ]
         for name in installation_sites:
             try:
-                db.execute("INSERT INTO job_sites (name, site_type) VALUES (?,?)", (name, "Installation"))
+                db.execute("INSERT INTO job_sites (name, site_type, site_code) VALUES (?,?,?)", (name, "Installation", generate_site_code()))
             except sqlite3.IntegrityError:
                 pass
         for name in amc_sites:
             try:
-                db.execute("INSERT INTO job_sites (name, site_type) VALUES (?,?)", (name, "AMC"))
+                db.execute("INSERT INTO job_sites (name, site_type, site_code) VALUES (?,?,?)", (name, "AMC", generate_site_code()))
             except sqlite3.IntegrityError:
                 pass
+        db.commit()
+
+    # Back-fill site codes for any sites still missing one
+    sites = db.execute("SELECT id FROM job_sites WHERE site_code IS NULL").fetchall()
+    for site in sites:
+        code = generate_site_code()
+        db.execute("UPDATE job_sites SET site_code = ? WHERE id = ?", (code, site[0]))
+    if sites:
         db.commit()
 
     db.close()
