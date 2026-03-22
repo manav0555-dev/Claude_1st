@@ -7,83 +7,125 @@
     <p class="client-form-subtitle">Please fill out the details below and we'll get back to you as soon as possible.</p>
 
     <div class="card">
-        <form method="POST">
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="customer_name">Your Full Name *</label>
-                    <input type="text" id="customer_name" name="customer_name" class="form-control" required placeholder="John Smith">
+        <form method="POST" id="complaintForm">
+            <!-- Step 1: Site Code Verification -->
+            <div class="form-group">
+                <label for="site_code">Site Access Code *</label>
+                <div style="display:flex; gap:8px; align-items:start;">
+                    <input type="text" id="site_code" name="site_code" class="form-control" required
+                           placeholder="e.g. AEH-X7K2" style="text-transform:uppercase; flex:1;"
+                           maxlength="8" autocomplete="off">
+                    <button type="button" id="verifyBtn" class="btn btn-secondary" onclick="verifySiteCode()">Verify</button>
                 </div>
-                <div class="form-group">
-                    <label for="customer_email">Email Address</label>
-                    <input type="email" id="customer_email" name="customer_email" class="form-control" placeholder="john@example.com">
-                </div>
+                <div id="siteStatus" style="margin-top:8px;"></div>
+                <small style="color:var(--gray-500);">Enter the access code provided by Air Excel for your site.</small>
             </div>
 
-            <div class="form-row">
+            <!-- Step 2: Complaint Details (hidden until code verified) -->
+            <div id="complaintFields" style="display:none;">
+                <hr style="margin:20px 0; border-color:var(--gray-200);">
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="customer_name">Your Full Name *</label>
+                        <input type="text" id="customer_name" name="customer_name" class="form-control" required placeholder="John Smith">
+                    </div>
+                    <div class="form-group">
+                        <label for="customer_email">Email Address</label>
+                        <input type="email" id="customer_email" name="customer_email" class="form-control" placeholder="john@example.com">
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label for="customer_phone">Phone Number</label>
                     <input type="tel" id="customer_phone" name="customer_phone" class="form-control" placeholder="+91 XXXX XXX XXX">
                 </div>
+
                 <div class="form-group">
-                    <label for="job_site_id">Client / Location *</label>
-                    <select id="job_site_id" name="job_site_id" class="form-control" required onchange="toggleOtherSite(this)">
-                        <option value="">Select your location...</option>
-                        <optgroup label="Installation Work Running">
-                            {% for s in job_sites if s['site_type'] == 'Installation' %}
-                            <option value="{{ s['id'] }}">{{ s['name'] }}</option>
-                            {% endfor %}
-                        </optgroup>
-                        <optgroup label="AMC">
-                            {% for s in job_sites if s['site_type'] == 'AMC' %}
-                            <option value="{{ s['id'] }}">{{ s['name'] }}</option>
-                            {% endfor %}
-                        </optgroup>
-                        {% if job_sites|selectattr('site_type', 'equalto', 'Other')|list %}
-                        <optgroup label="Other">
-                            {% for s in job_sites if s['site_type'] == 'Other' %}
-                            <option value="{{ s['id'] }}">{{ s['name'] }}</option>
-                            {% endfor %}
-                        </optgroup>
-                        {% endif %}
-                        <option value="other">-- Other (type client name) --</option>
+                    <label for="category">Issue Category *</label>
+                    <select id="category" name="category" class="form-control" required>
+                        <option value="">What type of issue?</option>
+                        <option value="Temperature">Temperature Issue (too hot/cold)</option>
+                        <option value="Airflow">Airflow Problem</option>
+                        <option value="Noise/Vibration">Noise or Vibration</option>
+                        <option value="Leak">Leak / Water Issue</option>
+                        <option value="Electrical">Electrical Issue</option>
+                        <option value="Installation">Installation Problem</option>
+                        <option value="Repair">Repair Needed</option>
+                        <option value="Maintenance">Maintenance Request</option>
+                        <option value="Billing">Billing Issue</option>
+                        <option value="Other">Other</option>
                     </select>
-                    <input type="text" id="other_site_name" name="other_site_name" class="form-control"
-                           placeholder="Enter client / site name" style="display:none; margin-top:8px;">
                 </div>
-            </div>
 
-            <div class="form-group">
-                <label for="category">Issue Category *</label>
-                <select id="category" name="category" class="form-control" required>
-                    <option value="">What type of issue?</option>
-                    <option value="Temperature">Temperature Issue (too hot/cold)</option>
-                    <option value="Airflow">Airflow Problem</option>
-                    <option value="Noise/Vibration">Noise or Vibration</option>
-                    <option value="Leak">Leak / Water Issue</option>
-                    <option value="Electrical">Electrical Issue</option>
-                    <option value="Installation">Installation Problem</option>
-                    <option value="Repair">Repair Needed</option>
-                    <option value="Maintenance">Maintenance Request</option>
-                    <option value="Billing">Billing Issue</option>
-                    <option value="Other">Other</option>
-                </select>
-            </div>
+                <div class="form-group">
+                    <label for="description">Describe Your Issue *</label>
+                    <textarea id="description" name="description" class="form-control" required
+                        placeholder="Please describe the problem in detail. Include information like when it started, which rooms are affected, and any other relevant details..."></textarea>
+                </div>
 
-            <div class="form-group">
-                <label for="description">Describe Your Issue *</label>
-                <textarea id="description" name="description" class="form-control" required
-                    placeholder="Please describe the problem in detail. Include information like when it started, which rooms are affected, and any other relevant details..."></textarea>
+                <button type="submit" class="btn btn-primary btn-lg" style="width:100%; justify-content:center;">Submit Complaint</button>
             </div>
-
-            <button type="submit" class="btn btn-primary btn-lg" style="width:100%; justify-content:center;">Submit Complaint</button>
         </form>
     </div>
 </div>
 <script>
-function toggleOtherSite(sel) {
-    var inp = document.getElementById('other_site_name');
-    inp.style.display = sel.value === 'other' ? 'block' : 'none';
-    if (sel.value !== 'other') inp.value = '';
+var siteVerified = false;
+
+function verifySiteCode() {
+    var code = document.getElementById('site_code').value.trim();
+    var statusDiv = document.getElementById('siteStatus');
+    var fields = document.getElementById('complaintFields');
+    var verifyBtn = document.getElementById('verifyBtn');
+
+    if (!code) {
+        statusDiv.innerHTML = '<span style="color:var(--danger);">Please enter a site code.</span>';
+        return;
+    }
+
+    verifyBtn.disabled = true;
+    verifyBtn.textContent = 'Checking...';
+
+    var form = new FormData();
+    form.append('site_code', code);
+
+    fetch('{{ url_for("client_verify_code") }}', { method: 'POST', body: form })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            verifyBtn.disabled = false;
+            verifyBtn.textContent = 'Verify';
+            if (data.valid) {
+                siteVerified = true;
+                statusDiv.innerHTML = '<span style="color:var(--success); font-weight:600;">&#10003; Site: ' + data.site_name + '</span>';
+                fields.style.display = 'block';
+                document.getElementById('site_code').readOnly = true;
+                verifyBtn.style.display = 'none';
+                document.getElementById('customer_name').focus();
+            } else {
+                siteVerified = false;
+                fields.style.display = 'none';
+                statusDiv.innerHTML = '<span style="color:var(--danger);">Invalid code. Please check and try again.</span>';
+            }
+        })
+        .catch(function() {
+            verifyBtn.disabled = false;
+            verifyBtn.textContent = 'Verify';
+            statusDiv.innerHTML = '<span style="color:var(--danger);">Something went wrong. Please try again.</span>';
+        });
 }
+
+document.getElementById('site_code').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        if (!siteVerified) verifySiteCode();
+    }
+});
+
+document.getElementById('complaintForm').addEventListener('submit', function(e) {
+    if (!siteVerified) {
+        e.preventDefault();
+        verifySiteCode();
+    }
+});
 </script>
 {% endblock %}

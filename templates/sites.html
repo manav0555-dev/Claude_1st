@@ -33,12 +33,13 @@
     <div class="card-header">All Sites</div>
     <div class="table-wrap">
         <table>
-            <thead><tr><th>ID</th><th>Name</th><th>Type</th><th>Address</th><th>Complaints</th><th>Added</th></tr></thead>
+            <thead><tr><th>ID</th><th>Name</th><th>Access Code</th><th>Type</th><th>Address</th><th>Complaints</th><th>Added</th></tr></thead>
             <tbody>
                 {% for s in sites %}
                 <tr>
                     <td>{{ s['id'] }}</td>
                     <td>{{ s['name'] }}</td>
+                    <td><code style="background:var(--gray-100); padding:2px 8px; border-radius:4px; font-weight:600;">{{ s['site_code'] or '—' }}</code></td>
                     <td><span class="badge badge-{{ 'info' if s['site_type'] == 'Installation' else ('success' if s['site_type'] == 'AMC' else 'secondary') }}">{{ s['site_type'] }}</span></td>
                     <td>{{ s['address'] or '—' }}</td>
                     <td>{{ s['complaint_count'] }}</td>
@@ -46,7 +47,7 @@
                 </tr>
                 {% endfor %}
                 {% if not sites %}
-                <tr><td colspan="6" style="text-align:center; color:var(--gray-500); padding:24px;">No sites yet.</td></tr>
+                <tr><td colspan="7" style="text-align:center; color:var(--gray-500); padding:24px;">No sites yet.</td></tr>
                 {% endif %}
             </tbody>
         </table>

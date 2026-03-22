@@ -41,6 +41,13 @@ def generate_ticket_id():
     return f"HVAC-{suffix}"
 
 
+def generate_site_code():
+    """Generate a unique site access code like AEH-XXXX."""
+    chars = string.ascii_uppercase + string.digits
+    suffix = ''.join(random.choices(chars, k=4))
+    return f"AEH-{suffix}"
+
+
 def get_complaint_for_sheets(db, ticket_id):
     """Fetch a complaint with joined fields for Google Sheets sync."""
     return db.execute("""
@@ -68,6 +75,17 @@ def init_db():
     site_cols = [r[1] for r in db.execute("PRAGMA table_info(job_sites)").fetchall()]
     if "site_type" not in site_cols:
         db.execute("ALTER TABLE job_sites ADD COLUMN site_type TEXT NOT NULL DEFAULT 'AMC'")
+    # Migrate: add site_code column to job_sites if missing
+    if "site_code" not in site_cols:
+        db.execute("ALTER TABLE job_sites ADD COLUMN site_code TEXT")
+        db.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_site_code ON job_sites(site_code)")
+        # Back-fill site codes for existing sites
+        sites = db.execute("SELECT id FROM job_sites WHERE site_code IS NULL").fetchall()
+        for site in sites:
+            code = generate_site_code()
+            db.execute("UPDATE job_sites SET site_code = ? WHERE id = ?", (code, site[0]))
+        if sites:
+            db.commit()
     # Back-fill ticket IDs for any existing complaints without one
     rows = db.execute("SELECT id FROM complaints WHERE ticket_id IS NULL").fetchall()
     for row in rows:
@@ -516,7 +534,7 @@ def new_complaint():
         job_site_id = request.form.get("job_site_id") or None
         other_site_name = request.form.get("other_site_name", "").strip()
         if job_site_id == "other" and other_site_name:
-            cursor = db.execute("INSERT INTO job_sites (name, site_type) VALUES (?,?)", (other_site_name, "Other"))
+            cursor = db.execute("INSERT INTO job_sites (name, site_type, site_code) VALUES (?,?,?)", (other_site_name, "Other", generate_site_code()))
             job_site_id = cursor.lastrowid
         elif job_site_id == "other":
             job_site_id = None
@@ -739,9 +757,10 @@ def add_site():
     if name:
         db = get_db()
         try:
-            db.execute("INSERT INTO job_sites (name, address, site_type) VALUES (?,?,?)", (name, address, site_type))
+            site_code = generate_site_code()
+            db.execute("INSERT INTO job_sites (name, address, site_type, site_code) VALUES (?,?,?,?)", (name, address, site_type, site_code))
             db.commit()
-            flash(f"Site '{name}' added.", "success")
+            flash(f"Site '{name}' added. Access Code: {site_code}", "success")
         except sqlite3.IntegrityError:
             flash("Site name already exists.", "danger")
     return redirect(url_for("manage_sites"))
@@ -944,6 +963,19 @@ def client_home():
     return render_template("client_home.html")
 
 
+@app.route("/client/verify-code", methods=["POST"])
+def client_verify_code():
+    """AJAX endpoint: verify a site access code and return site name."""
+    code = (request.form.get("site_code") or "").strip().upper()
+    if not code:
+        return jsonify({"valid": False})
+    db = get_db()
+    site = db.execute("SELECT id, name FROM job_sites WHERE site_code = ?", (code,)).fetchone()
+    if site:
+        return jsonify({"valid": True, "site_id": site["id"], "site_name": site["name"]})
+    return jsonify({"valid": False})
+
+
 @app.route("/client/submit", methods=["GET", "POST"])
 def client_submit():
     db = get_db()
@@ -951,18 +983,22 @@ def client_submit():
         customer_name = request.form.get("customer_name", "").strip()
         customer_phone = request.form.get("customer_phone", "").strip()
         customer_email = request.form.get("customer_email", "").strip()
-        job_site_id = request.form.get("job_site_id") or None
-        other_site_name = request.form.get("other_site_name", "").strip()
-        if job_site_id == "other" and other_site_name:
-            cursor = db.execute("INSERT INTO job_sites (name, site_type) VALUES (?,?)", (other_site_name, "Other"))
-            job_site_id = cursor.lastrowid
-        elif job_site_id == "other":
-            job_site_id = None
+        site_code = request.form.get("site_code", "").strip().upper()
         category = request.form.get("category", "").strip() or None
         description = request.form.get("description", "").strip()
 
-        if not all([customer_name, description]):
-            flash("Your name and a description of the issue are required.", "danger")
+        # Look up site by code
+        job_site_id = None
+        if site_code:
+            site = db.execute("SELECT id FROM job_sites WHERE site_code = ?", (site_code,)).fetchone()
+            if site:
+                job_site_id = site["id"]
+            else:
+                flash("Invalid site code. Please check and try again.", "danger")
+                return render_template("client_submit.html")
+
+        if not all([customer_name, description, site_code]):
+            flash("Your name, site code, and a description of the issue are required.", "danger")
         else:
             ticket_id = generate_ticket_id()
             title = category or "General Complaint"
@@ -980,9 +1016,7 @@ def client_submit():
                 google_sheets.sync_complaint(dict(complaint_row))
             return redirect(url_for("client_success", ticket_id=ticket_id))
 
-
-    job_sites = db.execute("SELECT id, name, site_type FROM job_sites ORDER BY site_type, name").fetchall()
-    return render_template("client_submit.html", job_sites=job_sites)
+    return render_template("client_submit.html")
 
 
 @app.route("/client/success/<ticket_id>")
