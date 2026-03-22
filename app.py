@@ -63,6 +63,7 @@ def init_db():
     db = sqlite3.connect(DATABASE)
     db.execute("PRAGMA foreign_keys = ON")
     db.executescript(SCHEMA)
+    db.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_site_code ON job_sites(site_code)")
 
     # Migrate: add ticket_id column if missing (existing databases)
     cols = [r[1] for r in db.execute("PRAGMA table_info(complaints)").fetchall()]
@@ -212,6 +213,7 @@ CREATE TABLE IF NOT EXISTS job_sites (
     name TEXT UNIQUE NOT NULL,
     address TEXT,
     site_type TEXT NOT NULL DEFAULT 'AMC' CHECK(site_type IN ('Installation', 'AMC', 'Other')),
+    site_code TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
