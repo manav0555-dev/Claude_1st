@@ -63,7 +63,6 @@ def init_db():
     db = sqlite3.connect(DATABASE)
     db.execute("PRAGMA foreign_keys = ON")
     db.executescript(SCHEMA)
-    db.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_site_code ON job_sites(site_code)")
 
     # Migrate: add ticket_id column if missing (existing databases)
     cols = [r[1] for r in db.execute("PRAGMA table_info(complaints)").fetchall()]
@@ -79,7 +78,8 @@ def init_db():
     # Migrate: add site_code column to job_sites if missing
     if "site_code" not in site_cols:
         db.execute("ALTER TABLE job_sites ADD COLUMN site_code TEXT")
-        db.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_site_code ON job_sites(site_code)")
+    # Create index after ensuring column exists (via schema or migration)
+    db.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_site_code ON job_sites(site_code)")
     # Back-fill ticket IDs for any existing complaints without one
     rows = db.execute("SELECT id FROM complaints WHERE ticket_id IS NULL").fetchall()
     for row in rows:
